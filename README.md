@@ -1,3 +1,3 @@
 # Doodling
 
-Web-app for quikly producing and sharing doodles
+Web-app for quickly producing and sharing doodles
