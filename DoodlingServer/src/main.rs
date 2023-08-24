@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use axum::{
     routing::{get, post},
     http::StatusCode,
@@ -8,21 +9,22 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tower_http::services::{ServeDir, ServeFile};
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()>{
     println!("Starting server...");
+    println!("Running on {}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap());
+    let addr :SocketAddr = format!("{}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap()).parse()?;
+
     let serve_dir = ServeDir::new("../DoolingHtmx");
     let app = Router::new()
         .route("/", get(root))
         .fallback_service(serve_dir);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-async fn root() -> &'static str {
+    Ok(())
+}async fn root() -> &'static str {
     "Hello, World!"
 }
 
