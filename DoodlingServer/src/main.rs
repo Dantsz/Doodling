@@ -21,10 +21,10 @@ async fn main() -> anyhow::Result<()>{
     println!("Running on {}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap());
     let addr :SocketAddr = format!("{}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap()).parse()?;
 
-    let db = Surreal::new::<Ws>("127.0.0.1:8000").await?;
+    let db = Surreal::new::<Ws>(format!("{}:{}",dotenv::var("DOODLING_DB_HOST").unwrap(),dotenv::var("DOODLING_DB_PORT").unwrap())).await?;
     db.signin(Root {
-        username: "root",
-        password: "root",
+        username: &dotenv::var("DOODLING_DB_USER").unwrap(),
+        password: &dotenv::var("DOODLING_DB_PASSWORD").unwrap(),
     })
     .await?;
 
