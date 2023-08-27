@@ -1,6 +1,6 @@
 use axum::{Router, routing::get, Extension};
 use surrealdb::{Surreal, engine::remote::ws::Client};
-
+use crate::model::DoodleEntry;
 
 async fn recent_doodles(db : Extension<Surreal<Client>>) -> String
 {

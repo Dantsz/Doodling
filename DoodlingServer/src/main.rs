@@ -1,4 +1,5 @@
 mod services;
+mod model;
 use anyhow::Ok;
 use axum::{
     routing::{get, post},
