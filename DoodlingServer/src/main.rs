@@ -29,6 +29,7 @@ async fn main() -> anyhow::Result<()>{
     })
     .await?;
 
+    db.use_ns("a").use_db("a").await?;
     let serve_dir = ServeDir::new("../DoolingHtmx");
     let app_test : Router = Router::new()
         .route("/test", get(root));
