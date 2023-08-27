@@ -1,0 +1,9 @@
+services:
+  doodling-server:
+    build: ./DoodlingServer
+    ports:
+      - "5000:5000"
+    surrealdb:
+      image: "surrealdb"
+      ports:
+        - "8000:8000"
