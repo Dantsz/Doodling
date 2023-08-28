@@ -29,12 +29,13 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
 async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> StatusCode
 {
     let doodle = DoodleEntry {
-        name: "Test".to_string(),
-        description: "Test".to_string(),
+        name: payload.name,
+        description: payload.description,
     };
-    let x : Result<(),surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
+    let x : Result<DoodleEntry,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
     if !x.is_ok()
     {
+        println!("Failed to create doodle: {:?}",x.err());
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
     StatusCode::CREATED

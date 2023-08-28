@@ -5,9 +5,9 @@
     <button hx-get="/recent-doodles" hx-target="#main" hx-swap="innerHTML">
         Go to recent doodles
     </button>
-    <form hx-post="/create-doodle" hx-target="#main" hx-swap="innerHTML">
-        <input type="text" name="doodle-name" placeholder="Doodle name" required>
-        <input type="text" name="doodle-description" placeholder="Doodle description" required>
+    <form hx-post="/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc'>
+        <input type="text" name="name" placeholder="Doodle name" required>
+        <input type="text" name="description" placeholder="Doodle description" required>
         <input type="submit" value="Create doodle">
     </form>
 
