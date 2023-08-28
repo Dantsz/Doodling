@@ -11,7 +11,7 @@ axum = "0.6.20"
 dotenv = "0.15.0"
 minijinja = "1.0.7"
 serde = { version = "1.0.185", features = ["derive"] }
-surrealdb = { git = "https://github.com/surrealdb/surrealdb.git"}
+surrealdb = { git = "https://github.com/surrealdb/surrealdb.git",tag ="v1.0.0-beta.9+20230402"}
 tokio = { version = "1.32.0", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.4.0", features = ["fs", "trace"] }

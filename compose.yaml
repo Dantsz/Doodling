@@ -1,12 +1,20 @@
 services:
   doodling-server:
     build: ./DoodlingServer
+    environment:
+      - DOODLING_HOST=0.0.0.0
+      - DOODLING_PORT=3000
+      - DOODLING_DB_HOST=surrealdb
+      - DOODLING_DB_PORT=8000
+      - DOODLING_DB_USER=root
+      - DOODLING_DB_PASSWORD=root
     ports:
-      - "5000:5000"
+      - "3000:3000"
+    depends_on:
+      - surrealdb
+
   surrealdb:
-    entrypoint:
-      - /surreal
-      - start
     image: surrealdb/surrealdb:latest
+    command: start --user root --pass root
     ports:
       - 8000:8000
