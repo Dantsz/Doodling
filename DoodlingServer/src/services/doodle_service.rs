@@ -1,4 +1,4 @@
-use axum::{Router, routing::get, Extension};
+use axum::{Router, routing::{get, post}, Extension, http::StatusCode, response::IntoResponse, Json};
 use surrealdb::{Surreal, engine::remote::ws::Client};
 use crate::model::DoodleEntry;
 use anyhow::Result;
@@ -26,10 +26,25 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
 
 }
 
+async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> StatusCode
+{
+    let doodle = DoodleEntry {
+        name: "Test".to_string(),
+        description: "Test".to_string(),
+    };
+    let x : Result<(),surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
+    if !x.is_ok()
+    {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+    StatusCode::CREATED
+}
+
 pub fn create_doodle_service(db : Surreal<Client>) -> Router
 {
     Router::new()
         .route("/recent-doodles",get(recent_doodles))
+        .route("/create-doodle", post(create_doodle))
         .layer(Extension(db))
 
 }
