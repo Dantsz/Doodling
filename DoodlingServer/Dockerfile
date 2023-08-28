@@ -1,4 +1,4 @@
-FROM rust:1.67
+FROM rust:1.70
 
 EXPOSE 3000
 
@@ -7,4 +7,4 @@ COPY . .
 
 RUN cargo install --path .
 
-CMD ["DoodlingServer"]
+ENTRYPOINT ["DoodlingServer"]

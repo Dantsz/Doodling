@@ -1,5 +1,5 @@
 [package]
-name = "dooling_service"
+name = "DoodlingServer"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,7 @@ axum = "0.6.20"
 dotenv = "0.15.0"
 minijinja = "1.0.7"
 serde = { version = "1.0.185", features = ["derive"] }
-surrealdb = "1.0.0-beta.9+20230402"
+surrealdb = { git = "https://github.com/surrealdb/surrealdb.git"}
 tokio = { version = "1.32.0", features = ["full"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.4.0", features = ["fs", "trace"] }

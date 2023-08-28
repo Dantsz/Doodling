@@ -3,7 +3,10 @@ services:
     build: ./DoodlingServer
     ports:
       - "5000:5000"
-    surrealdb:
-      image: "surrealdb"
-      ports:
-        - "8000:8000"
+  surrealdb:
+    entrypoint:
+      - /surreal
+      - start
+    image: surrealdb/surrealdb:latest
+    ports:
+      - 8000:8000
