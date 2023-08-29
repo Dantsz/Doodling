@@ -7,4 +7,4 @@ COPY . .
 
 RUN cargo install --path .
 
-ENTRYPOINT ["DoodlingServer"]
+ENTRYPOINT ["doodling_server"]
