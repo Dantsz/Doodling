@@ -1,5 +1,5 @@
 use image::GenericImage;
-use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat};
+use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout};
 use winit::{window::Window, event::WindowEvent};
 
 use crate::utils;
@@ -73,8 +73,9 @@ pub async fn new(window: Window) -> Self {
     };
     surface.configure(&device, &config);
 
-    let render_pipeline: RenderPipeline = Self::create_pipeline(&device, config.format);
-    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
+    let render_shader = device.create_shader_module(wgpu::include_wgsl!("render_shader.wgsl"));
+    let canvas_shader = device.create_shader_module(wgpu::include_wgsl!("canvas_shader.wgsl"));
+    
     //The canvas texture
     let texture_desc = wgpu::TextureDescriptor {
         size: wgpu::Extent3d {
@@ -144,7 +145,9 @@ pub async fn new(window: Window) -> Self {
         ],
         label: Some("diffuse_bind_group"),
     }
-);
+    );
+    let render_pipeline: RenderPipeline = Self::create_pipeline(&device, config.format, render_shader,&[&texture_bind_group_layout]);
+    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, canvas_shader,&[]);
     Self {
         window,
         surface,
@@ -246,7 +249,7 @@ pub async fn new(window: Window) -> Self {
             depth_stencil_attachment: None,
         });
         render_pass.set_pipeline(&self.display_render_pipeline);
-        //render_pass.set_bind_group(0, &self.canvas_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.canvas_bind_group, &[]);
         render_pass.draw(0..7,0..1);
         }
         // submit will accept anything that implements IntoIter
@@ -325,13 +328,12 @@ pub async fn new(window: Window) -> Self {
         }
     }
 
-    fn create_pipeline(device: &Device, format: TextureFormat) -> RenderPipeline
+    fn create_pipeline(device: &Device, format: TextureFormat,shader: ShaderModule,bind_group_layouts: &[& BindGroupLayout] ) -> RenderPipeline
     {
-        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: bind_group_layouts,
             push_constant_ranges: &[],
         });
         let screen_pipeline_fragment_target = [Some(wgpu::ColorTargetState {
