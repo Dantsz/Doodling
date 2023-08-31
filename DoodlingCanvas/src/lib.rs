@@ -46,6 +46,10 @@ pub async fn run() {
     {
         let mut clear_screen = state.begin_render();
         state.clear_screen(&mut clear_screen);
+        let tst = state.make_test_buffer([0.0,0.0,799.0,256.0]);
+        state.draw_buffer(&mut clear_screen, &tst);
+        let tst2 = state.make_test_buffer([0.0,256.0,800.0,256.0]);
+        state.draw_buffer(&mut clear_screen, &tst2);
         state.end_render(clear_screen);
     }
     //state.present();

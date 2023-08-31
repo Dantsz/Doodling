@@ -1,8 +1,28 @@
 use image::GenericImage;
-use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout};
+use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout, VertexBufferLayout};
 use winit::{window::Window, event::WindowEvent};
-
+use wgpu::util::DeviceExt;
 use crate::utils;
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    position: [f32; 2],
+}
+
+impl Vertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 1] =
+        wgpu::vertex_attr_array![0 => Float32x2];
+
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        use std::mem;
+
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+}
 
 pub struct State {
     surface: wgpu::Surface,
@@ -75,7 +95,6 @@ pub async fn new(window: Window) -> Self {
 
     let render_shader = device.create_shader_module(wgpu::include_wgsl!("render_shader.wgsl"));
     let canvas_shader = device.create_shader_module(wgpu::include_wgsl!("canvas_shader.wgsl"));
-    
     //The canvas texture
     let texture_desc = wgpu::TextureDescriptor {
         size: wgpu::Extent3d {
@@ -146,8 +165,8 @@ pub async fn new(window: Window) -> Self {
         label: Some("diffuse_bind_group"),
     }
     );
-    let render_pipeline: RenderPipeline = Self::create_pipeline(&device, config.format, render_shader,&[&texture_bind_group_layout]);
-    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, canvas_shader,&[]);
+    let render_pipeline: RenderPipeline = Self::create_pipeline(&device, config.format, render_shader,&[&texture_bind_group_layout],&[]);
+    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, canvas_shader,&[],&[Vertex::desc()]);
     Self {
         window,
         surface,
@@ -192,11 +211,6 @@ pub async fn new(window: Window) -> Self {
     {
         self.queue.submit(std::iter::once(commands.finish()));
     }
-    pub fn present(&mut self)
-    {
-        self.surface.get_current_texture().unwrap().present();
-    }
-
 
     pub fn clear_screen(&mut self, commands: &mut RenderCommands)
     {
@@ -212,7 +226,7 @@ pub async fn new(window: Window) -> Self {
         {
         let view = self.canvas_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut render_pass = commands.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
+            label: Some("Clear Canvas Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
                 resolve_target: None,
@@ -220,8 +234,54 @@ pub async fn new(window: Window) -> Self {
             })],
             depth_stencil_attachment: None,
         });
+
         render_pass.set_pipeline(&self.canvas_render_pipeline);
         }
+    }
+
+    pub fn draw_buffer(&mut self,commands: &mut RenderCommands, buffer : &wgpu::Buffer)
+    {
+        let color_attachment_operation = wgpu::Operations {
+            load: wgpu::LoadOp::Load,
+            store: true,
+        };
+        {
+        let view = self.canvas_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut render_pass = commands.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Draw Buffer Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: color_attachment_operation,
+            })],
+            depth_stencil_attachment: None,
+        });
+
+        render_pass.set_pipeline(&self.canvas_render_pipeline);
+        render_pass.set_vertex_buffer(0, buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
+        }
+
+    }
+    /// Makes a rectangle and returns the buffer containing vertex data for it, it's more than enough for the scope of this project
+    pub fn make_test_buffer(&mut self,dimensions : [f32;4]) -> wgpu::Buffer
+    {
+        let win = (utils::WINDOW_WIDTH as f32 / 2.0,utils::WINDOW_HEIGHT as f32 / 2.0);
+        let dimensions = [dimensions[0] , -dimensions[1], dimensions[2], dimensions[3]];
+        let vertices : [Vertex;6]= [
+            Vertex{position: [dimensions[0]/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
+            Vertex{position: [dimensions[0]/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1 + 1.0]},
+            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1 + 1.0]},
+            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1  + 1.0]},
+            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
+            Vertex{position: [dimensions[0]/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
+        ];
+        let vertex_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        vertex_buffer
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
@@ -250,7 +310,7 @@ pub async fn new(window: Window) -> Self {
         });
         render_pass.set_pipeline(&self.display_render_pipeline);
         render_pass.set_bind_group(0, &self.canvas_bind_group, &[]);
-        render_pass.draw(0..7,0..1);
+        render_pass.draw(0..6,0..1);
         }
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -328,7 +388,7 @@ pub async fn new(window: Window) -> Self {
         }
     }
 
-    fn create_pipeline(device: &Device, format: TextureFormat,shader: ShaderModule,bind_group_layouts: &[& BindGroupLayout] ) -> RenderPipeline
+    fn create_pipeline(device: &Device, format: TextureFormat,shader: ShaderModule,bind_group_layouts: &[& BindGroupLayout],buffers: &[VertexBufferLayout] ) -> RenderPipeline
     {
         let render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -347,7 +407,7 @@ pub async fn new(window: Window) -> Self {
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[],
+            buffers,
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
