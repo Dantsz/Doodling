@@ -1,12 +1,14 @@
 #![allow(non_snake_case)]
 mod render_state;
+pub mod utils;
+use utils::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::WindowBuilder, dpi::PhysicalSize,
 };
 
 use crate::render_state::State;
@@ -23,12 +25,11 @@ pub async fn run() {
     }
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
+    window.set_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
     #[cfg(target_arch = "wasm32")]
     {
         // Winit prevents sizing with CSS, so we have to set
         // the size manually when on web.
-        use winit::dpi::PhysicalSize;
-        window.set_inner_size(PhysicalSize::new(450, 400));
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
             .and_then(|win| win.document())
@@ -42,6 +43,13 @@ pub async fn run() {
     }
     let state_window_id = window.id();
     let mut state = State::new(window).await;
+    {
+        let mut clear_screen = state.begin_render();
+        state.clear_screen(&mut clear_screen);
+        state.end_render(clear_screen);
+    }
+    //state.present();
+
     event_loop.run(move |event, _, control_flow| {
     match event {
         Event::WindowEvent {
@@ -57,7 +65,7 @@ pub async fn run() {
                         ..
                     },
                 ..
-            } => *control_flow = ControlFlow::Exit,
+            } => {pollster::block_on(state.extract_framebuffer()); *control_flow = ControlFlow::Exit},
             _ => {}
         },
         Event::RedrawRequested(window_id) if window_id == state.window().id() => {
