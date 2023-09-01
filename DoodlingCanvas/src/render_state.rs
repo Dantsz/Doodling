@@ -5,8 +5,8 @@ use wgpu::util::DeviceExt;
 use crate::utils;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 2],
+pub struct Vertex {
+    pub position: [f32; 2],
 }
 
 impl Vertex {
@@ -37,7 +37,7 @@ pub struct State {
     canvas_bind_group: wgpu::BindGroup
 }
 
-type RenderCommands = CommandEncoder;
+pub type RenderCommands = CommandEncoder;
 impl State {
     // Creating some of the wgpu types requires async code
 pub async fn new(window: Window) -> Self {
@@ -185,20 +185,6 @@ pub async fn new(window: Window) -> Self {
     pub fn window(&self) -> &Window {
         &self.window
     }
-
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-    if new_size.width > 0 && new_size.height > 0 {
-        self.size = new_size;
-        self.config.width = new_size.width;
-        self.config.height = new_size.height;
-        self.surface.configure(&self.device, &self.config);
-    }
-    }
-
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        false
-    }
-
     pub fn update(&mut self) {
     }
 
@@ -217,8 +203,8 @@ pub async fn new(window: Window) -> Self {
         let color_attachment_operation = wgpu::Operations {
             load: wgpu::LoadOp::Clear(wgpu::Color {
                 r: 1.0,
-                g: 0.0,
-                b: 0.0,
+                g: 1.0,
+                b: 1.0,
                 a: 1.0,
             }),
             store: true,
@@ -261,21 +247,10 @@ pub async fn new(window: Window) -> Self {
         render_pass.set_vertex_buffer(0, buffer.slice(..));
         render_pass.draw(0..6, 0..1);
         }
-
     }
-    /// Makes a rectangle and returns the buffer containing vertex data for it, it's more than enough for the scope of this project
-    pub fn make_test_buffer(&mut self,dimensions : [f32;4]) -> wgpu::Buffer
+    //Creates a buffer for this state, which can be used to draw to the screen
+    pub fn make_test_buffer(&mut self,vertices : &[Vertex]) -> wgpu::Buffer
     {
-        let win = (utils::WINDOW_WIDTH as f32 / 2.0,utils::WINDOW_HEIGHT as f32 / 2.0);
-        let dimensions = [dimensions[0] , -dimensions[1], dimensions[2], dimensions[3]];
-        let vertices : [Vertex;6]= [
-            Vertex{position: [dimensions[0]/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
-            Vertex{position: [dimensions[0]/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1 + 1.0]},
-            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1 + 1.0]},
-            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,(dimensions[1]-dimensions[3])/win.1  + 1.0]},
-            Vertex{position: [(dimensions[0]+dimensions[2])/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
-            Vertex{position: [dimensions[0]/win.0 - 1.0,dimensions[1]/win.1 + 1.0]},
-        ];
         let vertex_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
@@ -291,9 +266,9 @@ pub async fn new(window: Window) -> Self {
         });
         let color_attachment_operation = wgpu::Operations {
             load: wgpu::LoadOp::Clear(wgpu::Color {
-                r: 0.0,
+                r: 1.0,
                 g: 1.0,
-                b: 0.0,
+                b: 1.0,
                 a: 1.0,
             }),
             store: true,
