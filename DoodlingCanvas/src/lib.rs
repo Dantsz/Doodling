@@ -56,7 +56,7 @@ impl WindowHandler
 
         let mut rect = {
          let mut state = self.renderer.lock().unwrap();
-         Rectangle::new_cached(&mut state,[0.0,0.0,10.0,10.0])
+         Rectangle::new(&mut state,[0.0,0.0,10.0,10.0])
         };
         event_loop.run(move |event, _, control_flow| {
         match event {
