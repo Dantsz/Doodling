@@ -33,7 +33,9 @@ pub struct State {
     display_render_pipeline: wgpu::RenderPipeline,
     canvas_texture: wgpu::Texture,
     canvas_render_pipeline: wgpu::RenderPipeline,
-    canvas_bind_group: wgpu::BindGroup
+    canvas_bind_group: wgpu::BindGroup,
+    offset_bind_group: wgpu::BindGroup,
+    drawing_offset_buffer: wgpu::Buffer
 }
 
 pub type RenderCommands = CommandEncoder;
@@ -164,8 +166,44 @@ pub async fn new(window: Window) -> Self {
         label: Some("diffuse_bind_group"),
     }
     );
+    let offset_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Offset Buffer"),
+        contents: bytemuck::cast_slice(&[0.0f32,0.0f32]),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+    let offset_bind_group_layout = device.create_bind_group_layout(
+        &wgpu::BindGroupLayoutDescriptor
+        {
+            label: Some("Offset Buffer Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+        }
+    );
+    let offset_bind_group = device.create_bind_group(
+        &wgpu::BindGroupDescriptor
+        {
+            label: Some("Offset Bind Group"),
+            layout: &offset_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry{
+                    binding: 0,
+                    resource: offset_buffer.as_entire_binding(),
+                }
+            ],
+        }
+    );
     let render_pipeline: RenderPipeline = Self::create_pipeline(&device, config.format, render_shader,&[&texture_bind_group_layout],&[]);
-    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, canvas_shader,&[],&[Vertex::desc()]);
+    let canvas_render_pipeline: RenderPipeline = Self::create_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, canvas_shader,&[&offset_bind_group_layout],&[Vertex::desc()]);
     Self {
         window,
         surface,
@@ -176,7 +214,9 @@ pub async fn new(window: Window) -> Self {
         display_render_pipeline: render_pipeline,
         canvas_texture: texture,
         canvas_render_pipeline,
-        canvas_bind_group
+        canvas_bind_group,
+        offset_bind_group,
+        drawing_offset_buffer: offset_buffer,
     }
 }
 
@@ -224,13 +264,14 @@ pub async fn new(window: Window) -> Self {
         }
     }
 
-    pub fn draw_buffer(&mut self,commands: &mut RenderCommands, buffer : &wgpu::Buffer)
+    pub fn draw_buffer(&mut self,commands: &mut RenderCommands, buffer : &wgpu::Buffer, offset : [f32;2])
     {
         let color_attachment_operation = wgpu::Operations {
             load: wgpu::LoadOp::Load,
             store: true,
         };
         {
+        self.queue.write_buffer(&self.drawing_offset_buffer, 0, bytemuck::cast_slice(&offset));
         let view = self.canvas_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut render_pass = commands.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Draw Buffer Render Pass"),
@@ -244,6 +285,7 @@ pub async fn new(window: Window) -> Self {
 
         render_pass.set_pipeline(&self.canvas_render_pipeline);
         render_pass.set_vertex_buffer(0, buffer.slice(..));
+        render_pass.set_bind_group(0, &self.offset_bind_group, &[]);
         render_pass.draw(0..6, 0..1);
         }
     }

@@ -1,3 +1,5 @@
+@group(0) @binding(0)
+var<uniform> offset: vec2<f32>;
 struct VertexInput {
     @location(0) vert_pos: vec2<f32>,
 }
@@ -12,7 +14,7 @@ fn vs_main(
     in : VertexInput
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(in.vert_pos.x, in.vert_pos.y, 0.0, 1.0);
+    out.clip_position = vec4<f32>(in.vert_pos.x + offset.x, in.vert_pos.y - offset.y, 0.0, 1.0);
     out.vert_pos = out.clip_position.xyz;
     return out;
 }

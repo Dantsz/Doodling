@@ -21,19 +21,17 @@
       console.log("Loading...");
 	  import init from "./DoodlingCanvas.js";
       import {create_window}  from "./DoodlingCanvas.js";
-	  import {run_window_loop}  from "./DoodlingCanvas.js";
-	  import {get_canvas_capture} from "./DoodlingCanvas.js";
       import {WindowHandler} from "./DoodlingCanvas.js";
 
 	  await init();
 	  let render = await create_window();
 	  var buttonRef = document.getElementById("print_png");
 
-      canvas_window = WindowHandler.new(render);
-      console.log(canvas_window);
-	  buttonRef.addEventListener("click", () => console.log(get_canvas_capture(canvas_window)));
+    canvas_window = WindowHandler.new(render);
+    console.log(canvas_window);
+	  buttonRef.addEventListener("click", () => console.log(canvas_window.get_canvas_capture()));
 
-	  await run_window_loop(render);
+	  await render.run_window_loop();
 
   </script>
 </body>
