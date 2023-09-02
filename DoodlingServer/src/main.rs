@@ -7,6 +7,7 @@ use axum::{
     response::IntoResponse,
     Json, Router,
 };
+use env_logger::Env;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tower_http::services::{ServeDir, ServeFile};
@@ -14,12 +15,17 @@ use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::sql::Thing;
 use surrealdb::Surreal;
+use log::{info, warn,trace};
 
 use crate::services::doodle_service;
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
-    println!("Starting server...");
-    println!("Running on {}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap());
+
+    let crate_name = env!("CARGO_PKG_NAME");
+    env_logger::Builder::new().filter_module(crate_name, log::LevelFilter::Trace).init();
+
+    trace!("Starting server...");
+    trace!("Running on {}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap());
     let addr :SocketAddr = format!("{}:{}",dotenv::var("DOODLING_HOST").unwrap(),dotenv::var("DOODLING_PORT").unwrap()).parse()?;
 
     let db = Surreal::new::<Ws>(format!("{}:{}",dotenv::var("DOODLING_DB_HOST").unwrap(),dotenv::var("DOODLING_DB_PORT").unwrap())).await?;

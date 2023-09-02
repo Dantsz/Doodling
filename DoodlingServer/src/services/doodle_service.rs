@@ -32,7 +32,7 @@ async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<Doodl
         name: payload.name,
         description: payload.description,
     };
-    let x : Result<DoodleEntry,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
+    let x : Result<Vec<DoodleEntry>,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
     if !x.is_ok()
     {
         println!("Failed to create doodle: {:?}",x.err());
