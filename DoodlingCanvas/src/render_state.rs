@@ -1,4 +1,4 @@
-use image::GenericImage;
+use image::{GenericImage, EncodableLayout};
 use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout, VertexBufferLayout};
 use winit::{window::Window, event::WindowEvent};
 use wgpu::util::DeviceExt;
@@ -23,14 +23,13 @@ impl Vertex {
         }
     }
 }
-
 pub struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
-    window: Window,
+    pub window: Window,
     display_render_pipeline: wgpu::RenderPipeline,
     canvas_texture: wgpu::Texture,
     canvas_render_pipeline: wgpu::RenderPipeline,
@@ -306,7 +305,7 @@ pub async fn new(window: Window) -> Self {
     }
     //EXTRACTS THE FRAMEBUFFER FROM THE GPU, THE FORMAT IS NOT DEFINED YET(considered BGRA8Srgb for now)
     //Since this is intended to only be called at the end of the program(and only once) it should be fine to allocate the buffer here
-    pub async fn extract_framebuffer(&mut self)// -> anyhow::Result<Box<[u8; 4 * std::mem::size_of::<u8>() * (utils::WINDOW_HEIGHT * utils::WINDOW_WIDTH) as usize]>>
+    pub async fn extract_framebuffer(& self) -> image::RgbaImage
     {
         let u32_size = std::mem::size_of::<u32>() as u32;
         let output_buffer_size = (u32_size * utils::WINDOW_HEIGHT * Self::get_necessary_buffer_width(utils::WINDOW_WIDTH)) as wgpu::BufferAddress;
@@ -319,7 +318,7 @@ pub async fn new(window: Window) -> Self {
             mapped_at_creation: false,
         };
         let output_buffer = self.device.create_buffer(&output_buffer_desc);
-        let output = &mut self.canvas_texture;
+        let output = &self.canvas_texture;
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None,
         });
@@ -346,7 +345,6 @@ pub async fn new(window: Window) -> Self {
         );
         self.queue.submit(Some(encoder.finish()));
         {
-            //TODO: this may also need to transform from gbra to rgba if we need color in the future, or just make the texture rgab, but then we'd
             // need 2 pipelines as we can't use the surface render pipeline because of the color attachment
             let buffer_slice = output_buffer.slice(..);
             // the future. Otherwise the application will freeze.
@@ -358,8 +356,9 @@ pub async fn new(window: Window) -> Self {
             rx.receive().await.unwrap().unwrap();
 
             let data = buffer_slice.get_mapped_range();
-            let mut buffer = image::RgbaImage::from_raw(Self::get_necessary_buffer_width(utils::WINDOW_WIDTH), utils::WINDOW_HEIGHT, data.to_vec()).unwrap();
-            buffer.sub_image(0,0,utils::WINDOW_WIDTH,utils::WINDOW_HEIGHT).to_image().save("image.png").unwrap();
+            image::RgbaImage::from_raw(Self::get_necessary_buffer_width(utils::WINDOW_WIDTH), utils::WINDOW_HEIGHT, data.to_vec()).unwrap()
+                            .sub_image(0,0,utils::WINDOW_WIDTH,utils::WINDOW_HEIGHT).to_image()
+
         }
     }
 

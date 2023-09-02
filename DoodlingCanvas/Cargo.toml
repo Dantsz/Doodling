@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.75"
+base64 = "0.21.3"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 cfg-if = "1.0.0"
 console_error_panic_hook = "0.1.7"
