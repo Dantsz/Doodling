@@ -29,7 +29,6 @@ use crate::{render_state::{State, Vertex, RenderCommands}, utils};
     // Prepares the rectangle for drawing adnd registers the drawing command to the render state
     pub fn draw_to(&mut self, render_state : &mut State,commands: &mut RenderCommands, offset : [f32;2])
     {
-        self.buffer =  render_state.make_test_buffer(self.vertices.as_slice());
         let adjust_offset = [2.0 * offset[0] / (utils::WINDOW_WIDTH as f32 ) ,2.0 * offset[1] / (utils::WINDOW_HEIGHT as f32 ) ];
         render_state.draw_buffer(commands, &self.buffer,adjust_offset);
     }

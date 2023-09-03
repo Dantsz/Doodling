@@ -3,18 +3,17 @@ mod model;
 use anyhow::Ok;
 use axum::{
     routing::{get, post},
-    http::StatusCode,
-    response::IntoResponse,
-    Json, Router,
+    http::{StatusCode, Response},
+    Router
 };
-use env_logger::Env;
-use serde::{Deserialize, Serialize};
+use tower::{ServiceBuilder, ServiceExt};
 use std::net::SocketAddr;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::{ServeDir,fs::ServeFileSystemResponseBody};
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::Surreal;
 use log::{info,warn,trace};
+use http_body::{Body as _, Full};
 
 use crate::services::doodle_service;
 #[tokio::main]
@@ -37,14 +36,11 @@ async fn main() -> anyhow::Result<()>{
     .await?;
     trace!("Setting namespace...");
     db.use_ns("a").use_db("a").await?;
-    let serve_dir = ServeDir::new("./DoolingHtmx");
 
     trace!("Creating app...");
     let app = Router::new()
-        .merge(doodle_service::create_doodle_service(db))
-        .fallback_service(serve_dir)
-        .fallback(handle_not_found);
-    trace!("Start serving...");
+        .nest("/api",doodle_service::create_doodle_service(db))
+        .fallback_service(ServeDir::new("./DoodlingHtmx"));
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -52,9 +48,5 @@ async fn main() -> anyhow::Result<()>{
         .unwrap();
 
     Ok(())
-}
-
-async fn handle_not_found() -> &'static str {
-    "Not Found"
 }
 

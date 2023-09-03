@@ -9,10 +9,11 @@ async-trait = "0.1.73"
 axum = "0.6.20"
 dotenv = "0.15.0"
 env_logger = "0.10.0"
+http-body = "0.4.5"
 log = "0.4.20"
 minijinja = "1.0.7"
 serde = { version = "1.0.185", features = ["derive"] }
 surrealdb = { git = "https://github.com/surrealdb/surrealdb.git",tag ="v1.0.0-beta.10"}
 tokio = { version = "1.32.0", features = ["full"] }
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.4.13", features = ["buffer", "util", "retry", "make"] }
 tower-http = { version = "0.4.0", features = ["fs", "trace"] }

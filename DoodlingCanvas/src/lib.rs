@@ -11,19 +11,24 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::prelude::wasm_bindgen;
+use web_sys::console::info;
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopBuilder},
     window::{WindowBuilder, Window}, dpi::PhysicalSize,
 };
 
 use crate::{render_state::State, brush::Rectangle};
-
+#[derive(Debug)]
+enum Events{
+    Close
+}
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct WindowHandler
 {
     renderer: Arc<Mutex<State>>,
-    event_loop: Arc<Mutex<Option<EventLoop<()>>>>
+    event_loop: Arc<Mutex<Option<EventLoop<Events>>>>,
+    event_loop_proxy: Arc<Mutex<EventLoopProxy<Events>>>
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -35,7 +40,8 @@ impl WindowHandler
         Self
         {
             renderer: other.renderer.clone(),
-            event_loop: other.event_loop.clone()
+            event_loop: other.event_loop.clone(),
+            event_loop_proxy: other.event_loop_proxy.clone()
         }
     }
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -55,8 +61,8 @@ impl WindowHandler
         info!("Running loop");
 
         let mut rect = {
-         let mut state = self.renderer.lock().unwrap();
-         Rectangle::new(&mut state,[0.0,0.0,10.0,10.0])
+        let mut state = self.renderer.lock().unwrap();
+        Rectangle::new(&mut state,[0.0,0.0,10.0,10.0])
         };
         event_loop.run(move |event, _, control_flow| {
         match event {
@@ -113,6 +119,10 @@ impl WindowHandler
                 let renderer = self.renderer.lock().unwrap();
                 renderer.window().request_redraw();
             },
+            Event::UserEvent(Events::Close) => {
+                info!("Received close event,sending exit signal");
+                *control_flow = ControlFlow::Exit;
+            }
             _ => {}
         }
         });
@@ -127,20 +137,29 @@ impl WindowHandler
         let frame = STANDARD.encode(buffer.as_bytes());
         frame
     }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn close(&self)
+    {
+        info!("Sending close event");
+        self.event_loop_proxy.lock().unwrap().send_event(Events::Close).expect("Failed to send close event");
+    }
+
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub async fn create_window() -> WindowHandler {
-    info!("Creating window");
     cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        console_log::init_with_level(log::Level::Info).expect("Couldn't initialize logger");
+        console_log::init_with_level(log::Level::Info);
     } else {
         env_logger::init();
     }
     }
-    let event_loop = EventLoop::new();
+    info!("Creating window");
+    let event_loop = EventLoopBuilder::<Events>::with_user_event().build();
+    let proxy = event_loop.create_proxy();
     let window: Window = WindowBuilder::new().build(&event_loop).unwrap();
     window.set_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
     #[cfg(target_arch = "wasm32")]
@@ -163,7 +182,8 @@ pub async fn create_window() -> WindowHandler {
     WindowHandler
     {
         renderer: state,
-        event_loop : Arc::new(Mutex::new(Some(event_loop)))
+        event_loop : Arc::new(Mutex::new(Some(event_loop))),
+        event_loop_proxy: Arc::new(Mutex::new(proxy))
     }
 
 }

@@ -1,14 +1,45 @@
 <div>
+     <script type="module">
+      var canvas_window;
+      console.log("Loading...");
+	  import init from "/canvas/DoodlingCanvas.js";
+      import {create_window}  from "/canvas/DoodlingCanvas.js";
+      import {WindowHandler} from "/canvas/DoodlingCanvas.js";
+
+	  await init();
+	  let render = await create_window();
+	  var buttonRef = document.getElementById("canvas-close");
+
+      canvas_window = WindowHandler.new(render);
+      console.log(canvas_window);
+	  buttonRef.addEventListener("click", () => {
+            canvas_window.close();
+      });
+
+	  await render.run_window_loop();
+    </script>
+
     <button id="back-button" hx-get="/index.html" hx-target="#main" hx-swap="innerHTML">
         Go back to main page
     </button>
-    <button hx-get="/recent-doodles" hx-target="#main" hx-swap="innerHTML">
+
+    <button hx-get="/api/recent-doodles" hx-target="#main" hx-swap="innerHTML">
         Go to recent doodles
     </button>
-    <form hx-post="/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc'>
+
+    <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc'>
         <input type="text" name="name" placeholder="Doodle name" required>
         <input type="text" name="description" placeholder="Doodle description" required>
         <input type="submit" value="Create doodle">
     </form>
+
+    <div id="wasm-example">
+
+    </div>
+	<button id="canvas-close">
+		Close Canvas
+	</button>
+
+
 
 </div>
