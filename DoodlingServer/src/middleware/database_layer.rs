@@ -12,7 +12,7 @@ impl DnConnection
 
     async fn get_recent_doodles(&self) -> Vec<DoodleEntry>
     {
-        iunimplemented!();
+        unimplemented!();
     }
 
     async fn create_doodle(&mut self, doodle: DoodleEntry) -> Result<(),Error>

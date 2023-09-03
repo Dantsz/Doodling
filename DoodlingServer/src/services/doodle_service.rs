@@ -3,9 +3,11 @@ use surrealdb::{Surreal, engine::remote::ws::Client};
 use crate::model::DoodleEntry;
 use anyhow::Result;
 use minijinja::render;
+use log::{trace,error};
 
 async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html<String>
 {
+    trace!("Serving recent doodles");
     let doodles : Vec<DoodleEntry> = db
         .select("Doodles")
         .await
@@ -28,6 +30,7 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
 
 async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> StatusCode
 {
+    trace!("Creating doodle: {:?}",payload);
     let doodle = DoodleEntry {
         name: payload.name,
         description: payload.description,
@@ -35,7 +38,7 @@ async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<Doodl
     let x : Result<Vec<DoodleEntry>,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
     if !x.is_ok()
     {
-        println!("Failed to create doodle: {:?}",x.err());
+        error!("Failed to create doodle: {:?}",x.err());
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
     StatusCode::CREATED
@@ -47,5 +50,4 @@ pub fn create_doodle_service(db : Surreal<Client>) -> Router
         .route("/recent-doodles",get(recent_doodles))
         .route("/create-doodle", post(create_doodle))
         .layer(Extension(db))
-
 }
