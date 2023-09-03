@@ -40,6 +40,12 @@ pub struct State {
 
 pub type RenderCommands = CommandEncoder;
 impl State {
+    const CLEAR_COLOR : wgpu::Color = wgpu::Color {
+        r: 0.2,
+        g: 0.2,
+        b: 0.2,
+        a: 1.0,
+    };
     // Creating some of the wgpu types requires async code
 pub async fn new(window: Window) -> Self {
     let size = window.inner_size();
@@ -168,7 +174,7 @@ pub async fn new(window: Window) -> Self {
     );
     let offset_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Offset Buffer"),
-        contents: bytemuck::cast_slice(&[0.0f32,0.0f32]),
+        contents: bytemuck::cast_slice(&[0.0f32,0.0f32,0.0f32,0.0f32]),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
     let offset_bind_group_layout = device.create_bind_group_layout(
@@ -240,12 +246,7 @@ pub async fn new(window: Window) -> Self {
     pub fn clear_screen(&mut self, commands: &mut RenderCommands)
     {
         let color_attachment_operation = wgpu::Operations {
-            load: wgpu::LoadOp::Clear(wgpu::Color {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-            }),
+            load: wgpu::LoadOp::Clear(Self::CLEAR_COLOR),
             store: true,
         };
         {

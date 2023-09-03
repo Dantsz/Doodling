@@ -1,5 +1,5 @@
 @group(0) @binding(0)
-var<uniform> offset: vec2<f32>;
+var<uniform> offset: vec4<f32>;
 struct VertexInput {
     @location(0) vert_pos: vec2<f32>,
 }
