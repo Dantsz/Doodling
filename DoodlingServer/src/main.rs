@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()>{
     let app = Router::new()
         .nest("/api",doodle_service::create_doodle_service(db))
         .fallback_service(ServeDir::new("./DoodlingHtmx"));
-
+    info!("Server started");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

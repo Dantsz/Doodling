@@ -1,4 +1,4 @@
-use axum::{Router, routing::{get, post}, Extension, http::StatusCode, response::IntoResponse, Json};
+use axum::{Router, routing::{get, post}, Extension, http::{StatusCode, HeaderMap}, response::IntoResponse, Json};
 use surrealdb::{Surreal, engine::remote::ws::Client};
 use crate::model::DoodleEntry;
 use anyhow::Result;
@@ -18,8 +18,9 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
         <h1> Doodles </h1>
         {% for doodle in doodles %}
             <div>
-                <h2>{{ doodle.name }}</h2>
-                <p>{{ doodle.description }}</p>
+                <h2>{{doodle.name}}</h2>
+                <p>{{doodle.description}}</p>
+                <img src=\"data:image.png;base64,{{doodle.data}}\"/>
             </div>
         {% endfor %}
     ",
@@ -27,22 +28,23 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
     resp.into()
 
 }
-
-async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> StatusCode
+async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> impl IntoResponse
 {
-    trace!("Creating doodle: {:?}",payload);
+    trace!("Creating doodle: {}",payload.name);
     let doodle = DoodleEntry {
         name: payload.name,
         description: payload.description,
         data : payload.data
     };
     let x : Result<Vec<DoodleEntry>,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
+    let mut header = HeaderMap::new();
     if !x.is_ok()
     {
         error!("Failed to create doodle: {:?}",x.err());
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        return (header,StatusCode::INTERNAL_SERVER_ERROR);
     }
-    StatusCode::CREATED
+    header.insert("HX-Redirect",format!("/index.html").parse().unwrap());
+    (header,StatusCode::CREATED)
 }
 
 pub fn create_doodle_service(db : Surreal<Client>) -> Router
