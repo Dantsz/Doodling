@@ -5,5 +5,6 @@ use serde::{Deserialize, Serialize};
 pub struct DoodleEntry
 {
     pub name: String,
-    pub description: String
+    pub description: String,
+    pub data: String
 }

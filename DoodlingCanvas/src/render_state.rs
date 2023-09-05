@@ -357,7 +357,7 @@ pub async fn new(window: Window) -> Self {
             usage: wgpu::BufferUsages::COPY_DST
                 // this tells wpgu that we want to read this buffer from the cpu
                 | wgpu::BufferUsages::MAP_READ,
-            label: None,
+            label: Some("Buffer containing the canvas for sending to the form"),
             mapped_at_creation: false,
         };
         let output_buffer = self.device.create_buffer(&output_buffer_desc);

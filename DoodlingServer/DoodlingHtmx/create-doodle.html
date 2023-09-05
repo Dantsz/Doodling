@@ -1,21 +1,14 @@
-<div>
+<script src="https://unpkg.com/htmx.org@1.9.4"></script>
+<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+<div id = "#main">
      <script type="module">
-      var canvas_window;
       console.log("Loading...");
 	  import init from "/canvas/DoodlingCanvas.js";
       import {create_window}  from "/canvas/DoodlingCanvas.js";
       import {WindowHandler} from "/canvas/DoodlingCanvas.js";
-
 	  await init();
 	  let render = await create_window();
-	  var buttonRef = document.getElementById("canvas-close");
-
-      canvas_window = WindowHandler.new(render);
-      console.log(canvas_window);
-	  buttonRef.addEventListener("click", () => {
-            canvas_window.close();
-      });
-
+      window.canvas_window = WindowHandler.new(render);
 	  await render.run_window_loop();
     </script>
 
@@ -27,19 +20,15 @@
         Go to recent doodles
     </button>
 
-    <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc'>
+    <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc' onsubmit="document.getElementById('canvas_form_data_input').value = window.canvas_window.get_canvas_capture();">
         <input type="text" name="name" placeholder="Doodle name" required>
         <input type="text" name="description" placeholder="Doodle description" required>
+        <input type="hidden" name="data" id ="canvas_form_data_input" value = "69">
         <input type="submit" value="Create doodle">
     </form>
 
     <div id="wasm-example">
 
     </div>
-	<button id="canvas-close">
-		Close Canvas
-	</button>
-
-
 
 </div>
