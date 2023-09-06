@@ -1,9 +1,7 @@
 <div>
-
-    <button id = "back-button" hx-get="/index.html" hx-target="#main" hx-swap="innerHTML">
+    <button id="back-button" hx-get="/index.html" hx-target="#main" hx-swap="innerHTML" class="doodle-btn">
         Go back to main page
     </button>
-
     <div id="load-doodles-recent" hx-get="/api/recent-doodles" hx-target="this" hx-swap="innerHTML" hx-trigger="load">
     </div>
 </div>

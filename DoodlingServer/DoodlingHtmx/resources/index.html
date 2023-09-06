@@ -2,9 +2,5 @@
 <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 <link href="../output.css" rel="stylesheet">
 <div id="main">
-    <button hx-get="/recent-doodles.html" hx-target="#main" hx-swap="innerHTML">
-        See recent doodles
-    </button>
-    <input type="button" onclick="location.href='/create-doodle.html';" value="Create a doodle" />
-
+    <div hx-target="#main" hx-swap="innerHTML" hx-trigger="load" hx-get="/home.html">
 </div>

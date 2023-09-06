@@ -1,10 +1,12 @@
 <h1> Doodles </h1>
+    <div class="grid gap-4 grid-cols-1 ">
     {% for doodle in doodles %}
-        <div class="grid gap-4 grid-cols-2">
+        <div class="grid gap-4 grid-cols-2 bg-zinc-200">
             <div>
-                <h2 class = "text-cyan-300">{{doodle.name}}</h2>
-                <p>{{doodle.description}}</p>
+                <h2>Author: {{doodle.name}}</h2>
+                <p>Author's descrption: {{doodle.description}}</p>
             </div>
-            <img src="data:image.png;base64,{{doodle.data}}">
+            <img src="data:image.png;base64,{{doodle.data}}" class="object-scale-down">
         </div>
     {% endfor %}
+    </div>

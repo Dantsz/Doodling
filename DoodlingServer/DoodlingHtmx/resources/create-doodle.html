@@ -1,7 +1,7 @@
 <script src="https://unpkg.com/htmx.org@1.9.4"></script>
 <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 <link href="../output.css" rel="stylesheet">
-<div id = "#main">
+<div id = "main" >
      <script type="module">
       console.log("Loading...");
 	  import init from "/canvas/DoodlingCanvas.js";
@@ -13,16 +13,18 @@
 	  await render.run_window_loop();
     </script>
 
-    <input type="button" onclick="location.href='/index.html';" value="Back" />
+    <input type="button" onclick="location.href='/index.html';" value="Back" class="doodle-btn" />
 
     <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc' onsubmit="document.getElementById('canvas_form_data_input').value = window.canvas_window.get_canvas_capture();">
-        <input type="text" name="name" placeholder="Doodle name" required>
-        <input type="text" name="description" placeholder="Doodle description" required>
-        <input type="hidden" name="data" id ="canvas_form_data_input" value = "69">
-        <input type="submit" value="Create doodle">
+        <div class="grid grid-cols-3">
+            <input type="text" name="name" placeholder="Doodle name" class="bg-gray-200" required>
+            <input type="text" name="description" placeholder="Doodle description" class="bg-gray-200" required>
+            <input type="hidden" name="data" id ="canvas_form_data_input" value = "69">
+            <input type="submit" value="Create doodle" class = "doodle-btn">
+        </div>
     </form>
 
-    <div id="wasm-example">
+    <div id="wasm-example" class ="w-full flex justify-center items-center">
     </div>
 
 </div>
