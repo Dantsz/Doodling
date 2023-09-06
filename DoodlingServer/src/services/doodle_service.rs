@@ -1,11 +1,11 @@
-use axum::{Router, routing::{get, post}, Extension, http::{StatusCode, HeaderMap}, response::IntoResponse, Json};
+use axum::{Router, routing::{get, post}, Extension, http::{StatusCode, HeaderMap, header}, response::IntoResponse, Json};
 use surrealdb::{Surreal, engine::remote::ws::Client};
-use crate::model::DoodleEntry;
+use crate::{model::DoodleEntry, include_template};
 use anyhow::Result;
 use minijinja::render;
 use log::{trace,error};
 
-async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html<String>
+async fn recent_doodles(db : Extension<Surreal<Client>>) -> impl IntoResponse
 {
     trace!("Serving recent doodles");
     let doodles : Vec<DoodleEntry> = db
@@ -14,19 +14,9 @@ async fn recent_doodles(db : Extension<Surreal<Client>>) -> axum::response::Html
         .expect("Failed to load doodles");
     //TODO: Add error-handling instead of expect
 
-    let resp = render!("
-        <h1> Doodles </h1>
-        {% for doodle in doodles %}
-            <div>
-                <h2>{{doodle.name}}</h2>
-                <p>{{doodle.description}}</p>
-                <img src=\"data:image.png;base64,{{doodle.data}}\"/>
-            </div>
-        {% endfor %}
-    ",
-    doodles);
-    resp.into()
+    let resp = render!(include_template!{"doodle_list"}, doodles);
 
+    ([(header::CONTENT_TYPE,"text/html")],resp)
 }
 async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> impl IntoResponse
 {
@@ -41,10 +31,10 @@ async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<Doodl
     if !x.is_ok()
     {
         error!("Failed to create doodle: {:?}",x.err());
-        return (header,StatusCode::INTERNAL_SERVER_ERROR);
+        return (StatusCode::INTERNAL_SERVER_ERROR,header);
     }
     header.insert("HX-Redirect",format!("/index.html").parse().unwrap());
-    (header,StatusCode::CREATED)
+    (StatusCode::CREATED,header)
 }
 
 pub fn create_doodle_service(db : Surreal<Client>) -> Router

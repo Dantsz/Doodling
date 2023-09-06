@@ -1,0 +1,10 @@
+<h1> Doodles </h1>
+    {% for doodle in doodles %}
+        <div class="grid gap-4 grid-cols-2">
+            <div>
+                <h2 class = "text-cyan-300">{{doodle.name}}</h2>
+                <p>{{doodle.description}}</p>
+            </div>
+            <img src="data:image.png;base64,{{doodle.data}}">
+        </div>
+    {% endfor %}
