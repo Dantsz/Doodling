@@ -1,27 +1,44 @@
-use surrealdb::{Surreal, engine::remote::ws::Client};
+pub(crate) use async_trait::async_trait;
+use surrealdb::{Surreal, engine::remote::ws::{Client, Ws}, opt::auth::{Credentials, self}};
 use anyhow::Result;
 
 use crate::model::DoodleEntry;
 
-
-struct DbConnection{
-    sureal_client: Surreal<Client>
+#[async_trait]
+pub trait DoodleDataStore : Clone + Send + Sync
+{
+    async fn get_recent_doodles(&self) -> Result<Vec<DoodleEntry>>;
+    async fn create_doodle(&self, doodle: DoodleEntry) -> Result<()>;
 }
 
-impl DbConnection
+#[derive(Clone)]
+pub struct SurrealDoodleConnection{
+    surreal_client: Surreal<Client>
+}
+
+impl SurrealDoodleConnection
 {
-    async fn new(connection_string: String) -> Self
+    pub async fn new(client : Surreal<Client>) -> Self
     {
-        unimplemented!()
+        Self{
+            surreal_client: client
+        }
+    }
+}
+
+#[async_trait]
+impl DoodleDataStore for SurrealDoodleConnection
+{
+    async fn get_recent_doodles(&self) -> Result<Vec<DoodleEntry>>
+    {
+        Ok(self.surreal_client
+        .select("Doodles")
+        .await?)
     }
 
-    async fn get_recent_doodles(&self) -> Vec<DoodleEntry>
+    async fn create_doodle(&self, doodle: DoodleEntry) -> Result<()>
     {
-        unimplemented!();
-    }
-
-    async fn create_doodle(&mut self, doodle: DoodleEntry) -> Result<()>
-    {
-        unimplemented!();
+        self.surreal_client.create::<Vec<DoodleEntry>>("Doodles").content::<DoodleEntry>(doodle).await?;
+        Ok(())
     }
 }

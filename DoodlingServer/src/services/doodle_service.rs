@@ -1,24 +1,22 @@
 use axum::{Router, routing::{get, post}, Extension, http::{StatusCode, HeaderMap, header}, response::IntoResponse, Json};
 use surrealdb::{Surreal, engine::remote::ws::Client};
 use crate::{model::DoodleEntry, include_template};
-use anyhow::Result;
+use anyhow::{Result, Error};
 use minijinja::render;
 use log::{trace,error};
+use crate::middleware::database_layer::DoodleDataStore;
 
-async fn recent_doodles(db : Extension<Surreal<Client>>) -> impl IntoResponse
+async fn recent_doodles<DataStore : DoodleDataStore>(db : Extension<DataStore>) -> impl IntoResponse
 {
     trace!("Serving recent doodles");
-    let doodles : Vec<DoodleEntry> = db
-        .select("Doodles")
-        .await
-        .expect("Failed to load doodles");
+    let doodles : Vec<DoodleEntry> = db.get_recent_doodles().await.unwrap();
     //TODO: Add error-handling instead of expect
 
     let resp = render!(include_template!{"doodle_list"}, doodles);
 
     ([(header::CONTENT_TYPE,"text/html")],resp)
 }
-async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<DoodleEntry>) -> impl IntoResponse
+async fn create_doodle<DataStore : DoodleDataStore>(db : Extension<DataStore>,Json(payload): Json<DoodleEntry>) -> impl IntoResponse
 {
     trace!("Creating doodle: {}",payload.name);
     let doodle = DoodleEntry {
@@ -26,7 +24,7 @@ async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<Doodl
         description: payload.description,
         data : payload.data
     };
-    let x : Result<Vec<DoodleEntry>,surrealdb::Error> = db.create("Doodles").content::<DoodleEntry>(doodle).await;
+    let x : Result<(),Error> = db.create_doodle(doodle).await;
     let mut header = HeaderMap::new();
     if !x.is_ok()
     {
@@ -37,10 +35,10 @@ async fn create_doodle(db : Extension<Surreal<Client>>,Json(payload): Json<Doodl
     (StatusCode::CREATED,header)
 }
 
-pub fn create_doodle_service(db : Surreal<Client>) -> Router
+pub fn create_doodle_service<DataStore : DoodleDataStore + 'static>(db :DataStore) -> Router
 {
     Router::new()
-        .route("/recent-doodles",get(recent_doodles))
-        .route("/create-doodle", post(create_doodle))
+        .route("/recent-doodles",get(recent_doodles::<DataStore>))
+        .route("/create-doodle", post(create_doodle::<DataStore>))
         .layer(Extension(db))
 }

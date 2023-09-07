@@ -15,7 +15,7 @@ use surrealdb::opt::auth::Root;
 use surrealdb::Surreal;
 use log::{info,warn,trace};
 
-use crate::services::doodle_service;
+use crate::{services::doodle_service, middleware::database_layer::SurrealDoodleConnection};
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
 
@@ -38,9 +38,11 @@ async fn main() -> anyhow::Result<()>{
     trace!("Setting namespace...");
     db.use_ns("a").use_db("a").await?;
 
+    let db_con = SurrealDoodleConnection::new(db).await;
+
     trace!("Creating app...");
     let app = Router::new()
-        .nest("/api",doodle_service::create_doodle_service(db))
+        .nest("/api",doodle_service::create_doodle_service(db_con))
         .fallback_service(ServeDir::new("./DoodlingHtmx/resources"));
     info!("Server started");
     axum::Server::bind(&addr)
