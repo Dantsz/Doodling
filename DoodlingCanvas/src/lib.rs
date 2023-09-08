@@ -5,13 +5,11 @@ pub mod utils;
 use std::sync::{Arc, Mutex};
 
 use image::{codecs::png::PngEncoder, EncodableLayout};
-use log::{info, error};
+use log::info;
 use utils::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use base64::{engine::general_purpose::STANDARD, Engine};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::prelude::wasm_bindgen;
-use web_sys::console::info;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopBuilder},

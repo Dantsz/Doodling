@@ -1,6 +1,6 @@
-use image::{GenericImage, EncodableLayout};
-use wgpu::{util, CommandEncoder, SurfaceTexture, Device, SurfaceConfiguration, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout, VertexBufferLayout};
-use winit::{window::Window, event::WindowEvent};
+use image::GenericImage;
+use wgpu::{CommandEncoder, Device, RenderPipeline, TextureFormat, ShaderModule, BindGroupLayout, VertexBufferLayout};
+use winit::window::Window;
 use wgpu::util::DeviceExt;
 use crate::utils;
 #[repr(C)]
@@ -230,9 +230,6 @@ pub async fn new(window: Window) -> Self {
     pub fn window(&self) -> &Window {
         &self.window
     }
-    pub fn update(&mut self) {
-    }
-
     pub fn begin_render(&mut self) -> RenderCommands {
         self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
          label: Some("Render Encoder"),

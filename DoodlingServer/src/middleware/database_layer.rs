@@ -1,5 +1,5 @@
 pub(crate) use async_trait::async_trait;
-use surrealdb::{Surreal, engine::remote::ws::{Client, Ws}, opt::auth::{Credentials, self}};
+use surrealdb::{Surreal, engine::remote::ws::Client};
 use anyhow::Result;
 
 use crate::model::DoodleEntry;

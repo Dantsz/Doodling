@@ -3,17 +3,13 @@ mod model;
 mod templates;
 mod middleware;
 use anyhow::Ok;
-use axum::{
-    routing::{get, post},
-    http::{StatusCode, Response},
-    Router
-};
+use axum::Router;
 use std::net::SocketAddr;
-use tower_http::services::{ServeDir,fs::ServeFileSystemResponseBody};
+use tower_http::services::ServeDir;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::Surreal;
-use log::{info,warn,trace};
+use log::{info,trace};
 
 use crate::{services::doodle_service, middleware::database_layer::SurrealDoodleConnection};
 #[tokio::main]
