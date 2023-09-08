@@ -7,7 +7,7 @@ use crate::model::DoodleEntry;
 #[async_trait]
 pub trait DoodleDataStore : Clone + Send + Sync
 {
-    async fn get_recent_doodles(&self) -> Result<Vec<DoodleEntry>>;
+    async fn get_recent_doodles(&self,limit: usize) -> Result<Vec<DoodleEntry>>;
     async fn create_doodle(&self, doodle: DoodleEntry) -> Result<()>;
 }
 
@@ -29,11 +29,14 @@ impl SurrealDoodleConnection
 #[async_trait]
 impl DoodleDataStore for SurrealDoodleConnection
 {
-    async fn get_recent_doodles(&self) -> Result<Vec<DoodleEntry>>
+    async fn get_recent_doodles(&self,limit: usize) -> Result<Vec<DoodleEntry>>
     {
         Ok(self.surreal_client
-        .select("Doodles")
-        .await?)
+        .query("SELECT * FROM Doodles LIMIT $limit")
+        .bind(("limit",limit))
+        .await?
+        .take(0)?
+        )
     }
 
     async fn create_doodle(&self, doodle: DoodleEntry) -> Result<()>

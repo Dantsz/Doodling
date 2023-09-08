@@ -9,7 +9,7 @@ use crate::middleware::database_layer::DoodleDataStore;
 async fn recent_doodles<DataStore : DoodleDataStore>(db : Extension<DataStore>) -> impl IntoResponse
 {
     trace!("Serving recent doodles");
-    let doodles : Vec<DoodleEntry> = db.get_recent_doodles().await.unwrap();
+    let doodles : Vec<DoodleEntry> = db.get_recent_doodles(10).await.unwrap();
     //TODO: Add error-handling instead of expect
 
     let resp = render!(include_template!{"doodle_list"}, doodles);
