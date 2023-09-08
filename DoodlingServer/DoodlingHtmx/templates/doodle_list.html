@@ -1,5 +1,4 @@
-<h1> Doodles </h1>
-    <div class="grid gap-4 grid-cols-1 ">
+<div class="grid gap-4 grid-cols-1 ">
     {% for doodle in doodles %}
         <div class="grid gap-4 grid-cols-2 bg-zinc-200">
             <div>
@@ -9,4 +8,4 @@
             <img src="data:image.png;base64,{{doodle.data}}" class="object-scale-down">
         </div>
     {% endfor %}
-    </div>
+</div>

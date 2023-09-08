@@ -1,5 +1,4 @@
 use axum::{Router, routing::{get, post}, Extension, http::{StatusCode, HeaderMap, header}, response::IntoResponse, Json};
-use surrealdb::{Surreal, engine::remote::ws::Client};
 use crate::{model::DoodleEntry, include_template};
 use anyhow::{Result, Error};
 use minijinja::render;
