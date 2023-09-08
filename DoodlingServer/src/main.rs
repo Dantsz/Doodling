@@ -3,7 +3,7 @@ mod model;
 mod templates;
 mod middleware;
 use anyhow::Ok;
-use axum::Router;
+use axum::{Router, response::IntoResponse, http::StatusCode, ServiceExt, handler::{HandlerWithoutStateExt, Handler}};
 use std::net::SocketAddr;
 use tower_http::services::ServeDir;
 use surrealdb::engine::remote::ws::Ws;
@@ -12,6 +12,10 @@ use surrealdb::Surreal;
 use log::{info,trace};
 
 use crate::{services::doodle_service, middleware::database_layer::SurrealDoodleConnection};
+async fn not_found_handler() -> impl IntoResponse {
+    info!("Not Found");
+    StatusCode::NOT_FOUND
+}
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
 
@@ -37,9 +41,13 @@ async fn main() -> anyhow::Result<()>{
     let db_con = SurrealDoodleConnection::new(db).await;
 
     trace!("Creating app...");
+    let dir = ServeDir::new("./DoodlingHtmx/resources")
+                                                              .not_found_service(not_found_handler.into_service());
     let app = Router::new()
         .nest("/api",doodle_service::create_doodle_service(db_con))
-        .fallback_service(ServeDir::new("./DoodlingHtmx/resources"));
+        .nest_service("/", dir)
+        .fallback(not_found_handler);
+
     info!("Server started");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
