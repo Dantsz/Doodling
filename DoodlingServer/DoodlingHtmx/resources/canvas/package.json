@@ -1,0 +1,12 @@
+{
+  "name": "DoodlingCanvas",
+  "version": "0.1.0",
+  "files": [
+    "DoodlingCanvas_bg.wasm",
+    "DoodlingCanvas.js",
+    "DoodlingCanvas.d.ts"
+  ],
+  "module": "DoodlingCanvas.js",
+  "types": "DoodlingCanvas.d.ts",
+  "sideEffects": false
+}
