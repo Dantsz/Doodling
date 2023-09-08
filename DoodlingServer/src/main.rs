@@ -45,7 +45,7 @@ async fn main() -> anyhow::Result<()>{
         .serve(app.into_make_service())
         .await
         .unwrap();
-
+    info!("Server stopped");
     Ok(())
 }
 

@@ -8,8 +8,8 @@ RUN cargo build --release
 FROM ubuntu:latest
 EXPOSE 3000
 
-WORKDIR /usr
-COPY ./DoodlingHtmx ./DoodlingServer/DoodlingHtmx
-COPY --from=build /usr/src/DoodlingServer/target/release/doodling_server ./DoodlingServer/doodling_server
+WORKDIR /usr/DoodlingServer
+COPY ./DoodlingHtmx ./DoodlingHtmx
+COPY --from=build /usr/src/DoodlingServer/target/release/doodling_server ./doodling_server
 
-ENTRYPOINT ["./DoodlingServer/doodling_server"]
+ENTRYPOINT ["./doodling_server"]
