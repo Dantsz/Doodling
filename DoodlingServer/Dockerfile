@@ -1,10 +1,15 @@
-FROM rust:1.70
-
-EXPOSE 3000
+FROM rust:1.70 as build
 
 WORKDIR /usr/src/DoodlingServer
 COPY . .
 
-RUN cargo install --path .
+RUN cargo build --release
 
-ENTRYPOINT ["doodling_server"]
+FROM ubuntu:latest
+EXPOSE 3000
+
+WORKDIR /usr
+COPY ./DoodlingHtmx ./DoodlingServer/DoodlingHtmx
+COPY --from=build /usr/src/DoodlingServer/target/release/doodling_server ./DoodlingServer/doodling_server
+
+ENTRYPOINT ["./DoodlingServer/doodling_server"]
