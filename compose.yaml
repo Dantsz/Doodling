@@ -1,6 +1,6 @@
 services:
   doodling-server:
-    build: ./DoodlingServer
+    build: .
     environment:
       - DOODLING_HOST=0.0.0.0
       - DOODLING_PORT=3000
