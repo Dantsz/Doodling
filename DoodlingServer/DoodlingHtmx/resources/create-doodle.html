@@ -4,9 +4,9 @@
 <div id = "main" >
      <script type="module">
       console.log("Loading...");
-	  import init from "/canvas/DoodlingCanvas.js";
-      import {create_window}  from "/canvas/DoodlingCanvas.js";
-      import {WindowHandler} from "/canvas/DoodlingCanvas.js";
+	  import init from "/pkg/DoodlingCanvas.js";
+      import {create_window}  from "/pkg/DoodlingCanvas.js";
+      import {WindowHandler} from "/pkg/DoodlingCanvas.js";
 	  await init();
 	  let render = await create_window();
       window.canvas_window = WindowHandler.new(render);
