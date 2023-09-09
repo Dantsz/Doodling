@@ -10,7 +10,7 @@ This should be the easiest way to get the app up and running.
 ### Development install
 There's some extra manual steps needed, to which I didn't find a good enough solution fast enough:
 1. The first is to setup the tailwind CLI to watch for changes as describe in the DoodleHtmx readme.
-2. The second is to manually compile and put the build of the doodling widget in the resources folder.(the dockerfile does is an example of how to do it)
+2. The second is to manually compile and put the build of the doodling widget in the resources folder.(the dockerfile is an example of how to do it)
 
 ## TODO
 * [ ] Add a page to view a specific doodle and option to get that link when creating a doodle
