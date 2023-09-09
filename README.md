@@ -14,5 +14,6 @@ There's some extra manual steps needed, to which I didn't find a good enough sol
 
 ## TODO
 * [ ] Add a page to view a specific doodle and option to get that link when creating a doodle
-* [ ] Build wasm inside docker image
+* [X] Build wasm inside docker image
 * [ ] Improve the drawing widget (make the painting more consistenten(as opossed to just drawing a black square to the screen when the use clicks the canvas),add colors, eraser, etc.)
+* [ ] Enforce schema on the database when deploying
