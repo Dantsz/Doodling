@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 async-trait = "0.1.73"
-axum = "0.6.20"
+axum = "0.7.3"
 dotenv = "0.15.0"
 env_logger = "0.10.0"
 http-body = "0.4.5"
@@ -16,4 +16,4 @@ serde = { version = "1.0.185", features = ["derive"] }
 surrealdb = { git = "https://github.com/surrealdb/surrealdb.git",tag ="v1.0.0"}
 tokio = { version = "1.32.0", features = ["full"] }
 tower = { version = "0.4.13", features = ["buffer", "util", "retry", "make"] }
-tower-http = { version = "0.4.0", features = ["fs", "trace"] }
+tower-http = { version = "0.5.0", features = ["fs", "trace"] }

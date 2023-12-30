@@ -48,12 +48,10 @@ async fn main() -> anyhow::Result<()>{
         .nest_service("/", dir)
         .fallback(not_found_handler);
 
+    info!("Configuring server...");
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     info!("Server started");
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    axum::serve(listener,app.into_make_service()).await?;
     info!("Server stopped");
     Ok(())
 }
-
