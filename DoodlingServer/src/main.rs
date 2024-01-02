@@ -6,7 +6,7 @@ use anyhow::Ok;
 use axum::{
     handler::HandlerWithoutStateExt,
     http::StatusCode,
-    response::IntoResponse,
+    response::IntoResponse, Router,
 };
 use log::{info, trace};
 use std::net::SocketAddr;
