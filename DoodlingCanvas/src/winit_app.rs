@@ -116,7 +116,6 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
                 let mut renderer = rendptr.lock().unwrap();
 
                 if self.mouse_pressed {
-                    self.mouse_pressed = false;
                     let mut paint = renderer.begin_render();
                     rect.draw_to(
                         &mut renderer,
