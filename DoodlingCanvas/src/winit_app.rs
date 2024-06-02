@@ -4,10 +4,10 @@ use crate::{brush::Rectangle, render_state::State};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
-    event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::{ActiveEventLoop, ControlFlow},
+    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
+    event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
-    window::{Window, WindowAttributes},
+    window::Window,
 };
 
 #[derive(Debug)]
@@ -37,7 +37,8 @@ impl<'a> CanvasApp<'a> {
 impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let window_attribues = Window::default_attributes()
-            .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
+            .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
+            .with_decorations(false);
         self.window = Some(Arc::new(
             event_loop.create_window(window_attribues).unwrap(),
         ));
@@ -72,8 +73,8 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
 
     fn window_event(
         &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-        window_id: winit::window::WindowId,
+        _event_loop: &winit::event_loop::ActiveEventLoop,
+        _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
         let mut rect = {
@@ -147,7 +148,11 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
         let _ = (event_loop, cause);
     }
 
-    fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, event: Events) {}
+    fn user_event(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop, event: Events) {
+        match event {
+            Events::Close => {}
+        }
+    }
 
     fn device_event(
         &mut self,
@@ -157,7 +162,7 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
     ) {
         let _ = (event_loop, device_id, event);
     }
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         let window = self.window.as_ref().unwrap();
         window.request_redraw();
     }

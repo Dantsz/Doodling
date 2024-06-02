@@ -3,17 +3,14 @@ mod brush;
 mod render_state;
 pub mod utils;
 pub mod winit_app;
-use std::{
-    borrow::BorrowMut,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::{codecs::png::PngEncoder, EncodableLayout};
 use log::info;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
+use winit::event_loop::{EventLoop, EventLoopProxy};
 use winit_app::{CanvasApp, Events};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
