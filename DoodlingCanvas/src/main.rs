@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
-use DoodlingCanvas::{create_window};
+use DoodlingCanvas::create_window;
 
 fn main() {
-    let window = pollster::block_on(create_window());
+    let window = create_window();
     window.run_window_loop();
 }
