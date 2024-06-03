@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{brush::Rectangle, render_state::State};
+use web_sys::console::warn;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -12,6 +13,7 @@ use winit::{
 
 #[derive(Debug)]
 pub enum Events {
+    NewState(Arc<Mutex<State>>),
     Close,
 }
 
@@ -20,21 +22,21 @@ use crate::utils;
 use utils::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 #[derive(Clone, Default)]
-pub struct CanvasApp<'a> {
+pub struct CanvasApp {
     // request_redraw: bool,
     // wait_cancelled: bool,
     // close_requested: bool,
     mouse_pressed: bool,
     mouse_position: (f32, f32),
     window: Option<Arc<Window>>,
-    pub state: Option<Arc<Mutex<State<'a>>>>,
+    pub state: Option<Arc<Mutex<State>>>,
 }
-impl<'a> CanvasApp<'a> {
-    pub fn renderer(&self) -> Arc<Mutex<State<'a>>> {
+impl CanvasApp {
+    pub fn renderer(&self) -> Arc<Mutex<State>> {
         self.state.as_ref().unwrap().clone()
     }
 }
-impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
+impl ApplicationHandler<Events> for CanvasApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let window_attribues = Window::default_attributes()
             .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -42,9 +44,20 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
         self.window = Some(Arc::new(
             event_loop.create_window(window_attribues).unwrap(),
         ));
-        self.state = Some(Arc::new(Mutex::new(pollster::block_on(State::new(
-            self.window.as_ref().unwrap().clone(),
-        )))));
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let new_state = Arc::new(Mutex::new(pollster::block_on(State::new(
+                self.window.as_ref().unwrap().clone(),
+            ))));
+            event_loop.(Events::NewState(new_state));
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            let state = wasm_bindgen_futures::spawn_local(State::new(
+                self.window.as_ref().unwrap().clone(),
+            ));
+            state
+        }
         #[cfg(target_arch = "wasm32")]
         {
             // Winit prevents sizing with CSS, so we have to set
@@ -62,13 +75,10 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
                 .expect("Couldn't append canvas to document body.");
         }
 
-        self.window.as_ref().unwrap().pre_present_notify();
-        let rendptr = self.renderer();
-        let mut renderer = rendptr.lock().unwrap();
-        let mut clear_screen = renderer.begin_render();
-        renderer.clear_screen(&mut clear_screen);
-        renderer.end_render(clear_screen);
-        let _ = renderer.render();
+        if self.state.is_none() {
+            println!("State is none");
+            return;
+        }
     }
 
     fn window_event(
@@ -77,6 +87,10 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
+        if self.state.is_none() {
+            println!("State is none");
+            return;
+        }
         let mut rect = {
             let rendptr = self.renderer();
             let mut state = rendptr.lock().unwrap();
@@ -112,7 +126,6 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
             }
             WindowEvent::RedrawRequested => {
                 let window = self.window.as_ref().unwrap();
-                window.pre_present_notify();
                 let rendptr = self.renderer();
                 let mut renderer = rendptr.lock().unwrap();
 
@@ -136,6 +149,9 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
                     Err(e) => eprintln!("{:?}", e),
                 }
             }
+            WindowEvent::Resized(size) => {
+                println!("Resized to {:?}", size);
+            }
             _ => {}
         }
     }
@@ -151,6 +167,15 @@ impl<'a> ApplicationHandler<Events> for CanvasApp<'a> {
     fn user_event(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop, event: Events) {
         match event {
             Events::Close => {}
+            Events::NewState(state) => {
+                self.state = Some(state);
+                let rendptr = self.renderer();
+                let mut renderer = rendptr.lock().unwrap();
+                let mut clear_screen = renderer.begin_render();
+                renderer.clear_screen(&mut clear_screen);
+                renderer.end_render(clear_screen);
+                let _ = renderer.render();
+            }
         }
     }
 

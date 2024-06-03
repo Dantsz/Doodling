@@ -14,14 +14,14 @@ use winit::event_loop::{EventLoop, EventLoopProxy};
 use winit_app::{CanvasApp, Events};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct WindowHandler<'a> {
+pub struct WindowHandler {
     event_loop: Arc<Mutex<Option<EventLoop<Events>>>>,
     event_loop_proxy: Arc<Mutex<EventLoopProxy<Events>>>,
-    app: CanvasApp<'a>,
+    app: CanvasApp,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl<'a> WindowHandler<'a> {
+impl WindowHandler {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     pub fn new(other: &Self) -> Self {
         Self {
@@ -39,6 +39,9 @@ impl<'a> WindowHandler<'a> {
     }
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     pub fn get_canvas_capture(&self) -> String {
+        if self.app.state.is_none() {
+            return String::from("");
+        }
         let rendptr = self.app.renderer();
         let img = pollster::block_on(rendptr.lock().unwrap().extract_framebuffer());
         let mut buffer = Vec::new();
@@ -60,7 +63,7 @@ impl<'a> WindowHandler<'a> {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub fn create_window<'a>() -> WindowHandler<'a> {
+pub fn create_window() -> WindowHandler {
     cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));

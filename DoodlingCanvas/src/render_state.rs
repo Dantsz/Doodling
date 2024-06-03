@@ -1,3 +1,5 @@
+use core::fmt;
+use std::fmt::Formatter;
 use std::sync::Arc;
 
 use crate::utils;
@@ -27,8 +29,8 @@ impl Vertex {
         }
     }
 }
-pub struct State<'a> {
-    surface: wgpu::Surface<'a>,
+pub struct State {
+    surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
@@ -43,7 +45,7 @@ pub struct State<'a> {
 }
 
 pub type RenderCommands = CommandEncoder;
-impl<'a> State<'a> {
+impl State {
     const CLEAR_COLOR: wgpu::Color = wgpu::Color {
         r: 0.2,
         g: 0.2,
@@ -497,5 +499,14 @@ impl<'a> State<'a> {
             multiview: None, // 5.
         };
         device.create_render_pipeline(&screen_pipeline_descriptor)
+    }
+}
+
+impl fmt::Debug for State {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("State")
+            .field("size", &self.size)
+            .field("window", &self.window)
+            .finish()
     }
 }
