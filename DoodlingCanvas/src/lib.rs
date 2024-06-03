@@ -31,11 +31,12 @@ impl WindowHandler {
         }
     }
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-    pub fn run_window_loop(mut self) {
+    pub fn run_window_loop(self) {
+        use winit::platform::web::EventLoopExtWebSys;
         info!("Setup window loop");
         let event_loop = self.event_loop.lock().unwrap().take().unwrap();
         info!("Running loop");
-        let _ = event_loop.run_app(&mut self.app);
+        let _ = event_loop.spawn_app(self.app);
     }
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     pub fn get_canvas_capture(&self) -> String {
@@ -67,7 +68,7 @@ pub fn create_window() -> WindowHandler {
     cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        console_log::init_with_level(log::Level::Info);
+        console_log::init_with_level(log::Level::Info).expect("Failed to initialize logger");
     } else {
         env_logger::init();
     }

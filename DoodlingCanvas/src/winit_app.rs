@@ -1,14 +1,14 @@
 use crate::{brush::Rectangle, render_state::State};
 use log::info;
 use std::sync::{Arc, Mutex};
-use web_sys::console::warn;
-use web_sys::window;
+use web_sys::HtmlCanvasElement;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
     event::{ElementState, KeyEvent, MouseButton, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoopProxy},
     keyboard::{Key, NamedKey},
+    platform::web::{WindowAttributesExtWebSys, WindowExtWebSys},
     window::Window,
 };
 #[derive(Debug)]
@@ -51,24 +51,44 @@ impl CanvasApp {
 }
 impl ApplicationHandler<Events> for CanvasApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let mut window_attributes = Window::default_attributes()
-            .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
-            .with_decorations(false);
+        let mut window_attributes = Window::default_attributes();
 
         #[cfg(target_arch = "wasm32")]
         {
             info!("Initializing canvas");
-            use web_sys::wasm_bindgen::JsCast;
+            use wasm_bindgen::JsCast;
             use winit::platform::web::WindowAttributesExtWebSys;
             let window = web_sys::window().unwrap();
             let document = window.document().unwrap();
-            let canvas = document.get_element_by_id("wasm-example").unwrap();
-            let html_canvas_element = canvas.unchecked_into();
+
+            let canvas = document.get_element_by_id("canvas").unwrap();
+            let html_canvas_element: HtmlCanvasElement = {
+                match canvas.dyn_into() {
+                    Ok(val) => val,
+                    Err(_) => {
+                        log::warn!("Failed to convert canvas to html canvas element");
+                        return;
+                    }
+                }
+            };
+            log::info!("Canvas created ({})", html_canvas_element.outer_html());
+
             window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
         }
-        self.window = Some(Arc::new(
-            event_loop.create_window(window_attributes).unwrap(),
-        ));
+        let window = event_loop
+            .create_window(window_attributes)
+            .expect("Failed to create window");
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            let canvas = window.canvas().expect("Failed to get canvas");
+            log::info!("Window canvas size: ({})", canvas.outer_html());
+        }
+        self.window = Some(Arc::new(window));
+        log::info!(
+            "Window created {:?}",
+            self.window.as_ref().unwrap().inner_size()
+        );
         #[cfg(not(target_arch = "wasm32"))]
         {
             let new_state = Arc::new(Mutex::new(pollster::block_on(State::new(

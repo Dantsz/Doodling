@@ -1,10 +1,10 @@
-FROM rust:1.70 as build_canvas_app
+FROM rust:1.77 as build_canvas_app
 WORKDIR /usr/src/DoodlingCanvas
 COPY ./DoodlingCanvas .
 RUN cargo install wasm-pack
 RUN wasm-pack build --release --target web
 
-FROM rust:1.70 as build_service
+FROM rust:1.77 as build_service
 
 WORKDIR /usr/src/DoodlingServer
 COPY ./DoodlingServer .

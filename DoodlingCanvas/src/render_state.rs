@@ -2,13 +2,15 @@ use core::fmt;
 use std::fmt::Formatter;
 use std::sync::Arc;
 
-use crate::utils;
+use crate::utils::{self, WINDOW_HEIGHT, WINDOW_WIDTH};
 use image::GenericImage;
+use log::error;
 use wgpu::util::DeviceExt;
 use wgpu::{
     BindGroupLayout, CommandEncoder, Device, PipelineCompilationOptions, RenderPipeline,
     ShaderModule, TextureFormat, VertexBufferLayout,
 };
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -54,12 +56,15 @@ impl State {
     };
     // Creating some of the wgpu types requires async code
     pub async fn new(window: Arc<Window>) -> Self {
-        let size = window.inner_size();
+        let size = PhysicalSize {
+            width: WINDOW_WIDTH,
+            height: WINDOW_HEIGHT,
+        };
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
+            backends: wgpu::Backends::GL,
             dx12_shader_compiler: Default::default(),
             flags: Default::default(),
             gles_minor_version: Default::default(),
@@ -68,16 +73,25 @@ impl State {
         //
         // The surface needs to live as long as the window that created it.
         // State owns the window so this should be safe.
-        let surface = instance.create_surface(window.clone()).unwrap();
+        let surface = {
+            match instance.create_surface(window.clone()) {
+                Ok(surface) => surface,
+                Err(err) => {
+                    error!("Failed to create surface: {:?}", err);
+                    unreachable!()
+                }
+            }
+        };
 
-        let adapters = instance.enumerate_adapters(wgpu::Backends::all());
-        let adapter = adapters
-            .iter()
-            .find(|adapter| {
-                // Check if this adapter supports our surface
-                adapter.is_surface_supported(&surface)
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                compatible_surface: Some(&surface),
+                power_preference: wgpu::PowerPreference::None,
+                force_fallback_adapter: false,
             })
+            .await
             .unwrap();
+
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {

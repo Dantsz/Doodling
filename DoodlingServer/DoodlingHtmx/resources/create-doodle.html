@@ -1,16 +1,19 @@
 <script src="https://unpkg.com/htmx.org@1.9.4"></script>
 <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 <link href="../output.css" rel="stylesheet">
-<div id = "main" >
-     <script type="module">
-      console.log("Loading...");
-	  import init from "/pkg/DoodlingCanvas.js";
-      import {create_window}  from "/pkg/DoodlingCanvas.js";
-      import {WindowHandler} from "/pkg/DoodlingCanvas.js";
-	  await init();
-	  let render = await create_window();
-      window.canvas_window = WindowHandler.new(render);
-	  await render.run_window_loop();
+<div id="main">
+    <script type="module">
+        console.log("Loading...");
+        import init, { create_window } from "/pkg/DoodlingCanvas.js";
+        console.log("Loaded create_window")
+        import { WindowHandler } from "/pkg/DoodlingCanvas.js";
+        console.log("Loaded WindowHandler")
+        await init();
+        console.log("Initialized")
+        let render = create_window();
+        console.log("Created window")
+        window.canvas_window = WindowHandler.new(render);
+        await render.run_window_loop();
     </script>
 
     <input type="button" onclick="location.href='/index.html';" value="Back" class="doodle-btn" />
@@ -19,12 +22,14 @@
         <div class="grid grid-cols-3">
             <input type="text" name="name" placeholder="Doodle name" class="bg-gray-200" required>
             <input type="text" name="description" placeholder="Doodle description" class="bg-gray-200" required>
-            <input type="hidden" name="data" id ="canvas_form_data_input" value = "69">
-            <input type="submit" value="Create doodle" class = "doodle-btn">
+            <input type="hidden" name="data" id="canvas_form_data_input" value="69">
+            <input type="submit" value="Create doodle" class="doodle-btn">
         </div>
     </form>
 
-    <div id="wasm-example" class ="w-full flex justify-center items-center">
+    <div id="wasm-example" class="w-full flex justify-center items-center">
+    <canvas id="canvas" width="800" height="600"></canvas>
     </div>
+
 
 </div>
