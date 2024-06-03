@@ -23,7 +23,7 @@ pub struct WindowHandler {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl WindowHandler {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-    pub fn new(other: &Self) -> Self {
+    pub fn new(other: &WindowHandler) -> Self {
         Self {
             event_loop: other.event_loop.clone(),
             event_loop_proxy: other.event_loop_proxy.clone(),
@@ -78,10 +78,11 @@ pub fn create_window() -> WindowHandler {
         .expect("Failed to create event loop");
     let proxy = event_loop.create_proxy();
 
+    let event_loop_proxy = Arc::new(Mutex::new(proxy));
     WindowHandler {
         event_loop: Arc::new(Mutex::new(Some(event_loop))),
-        event_loop_proxy: Arc::new(Mutex::new(proxy)),
-        app: CanvasApp::default(),
+        event_loop_proxy: event_loop_proxy.clone(),
+        app: CanvasApp::new(event_loop_proxy.clone()),
     }
 }
 

@@ -1,16 +1,16 @@
-use std::sync::{Arc, Mutex};
-
 use crate::{brush::Rectangle, render_state::State};
+use log::info;
+use std::sync::{Arc, Mutex};
 use web_sys::console::warn;
+use web_sys::window;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
     event::{ElementState, KeyEvent, MouseButton, WindowEvent},
-    event_loop::ActiveEventLoop,
+    event_loop::{ActiveEventLoop, EventLoopProxy},
     keyboard::{Key, NamedKey},
     window::Window,
 };
-
 #[derive(Debug)]
 pub enum Events {
     NewState(Arc<Mutex<State>>),
@@ -21,7 +21,7 @@ use crate::utils;
 
 use utils::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct CanvasApp {
     // request_redraw: bool,
     // wait_cancelled: bool,
@@ -30,54 +30,69 @@ pub struct CanvasApp {
     mouse_position: (f32, f32),
     window: Option<Arc<Window>>,
     pub state: Option<Arc<Mutex<State>>>,
+    event_loop: Arc<Mutex<EventLoopProxy<Events>>>,
 }
 impl CanvasApp {
     pub fn renderer(&self) -> Arc<Mutex<State>> {
         self.state.as_ref().unwrap().clone()
     }
+    pub fn new(event_loop: Arc<Mutex<EventLoopProxy<Events>>>) -> Self {
+        Self {
+            // request_redraw: false,
+            // wait_cancelled: false,
+            // close_requested: false,
+            mouse_pressed: false,
+            mouse_position: (0.0, 0.0),
+            window: None,
+            state: None,
+            event_loop,
+        }
+    }
 }
 impl ApplicationHandler<Events> for CanvasApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let window_attribues = Window::default_attributes()
+        let mut window_attributes = Window::default_attributes()
             .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
             .with_decorations(false);
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            info!("Initializing canvas");
+            use web_sys::wasm_bindgen::JsCast;
+            use winit::platform::web::WindowAttributesExtWebSys;
+            let window = web_sys::window().unwrap();
+            let document = window.document().unwrap();
+            let canvas = document.get_element_by_id("wasm-example").unwrap();
+            let html_canvas_element = canvas.unchecked_into();
+            window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
+        }
         self.window = Some(Arc::new(
-            event_loop.create_window(window_attribues).unwrap(),
+            event_loop.create_window(window_attributes).unwrap(),
         ));
         #[cfg(not(target_arch = "wasm32"))]
         {
             let new_state = Arc::new(Mutex::new(pollster::block_on(State::new(
                 self.window.as_ref().unwrap().clone(),
             ))));
-            event_loop.(Events::NewState(new_state));
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            let state = wasm_bindgen_futures::spawn_local(State::new(
-                self.window.as_ref().unwrap().clone(),
-            ));
-            state
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            // Winit prevents sizing with CSS, so we have to set
-            // the size manually when on web.
-            info!("Initializing canvas");
-            use winit::platform::web::WindowExtWebSys;
-            web_sys::window()
-                .and_then(|win| win.document())
-                .and_then(|doc| {
-                    let dst = doc.get_element_by_id("wasm-example")?;
-                    let canvas = web_sys::Element::from(window.canvas());
-                    dst.append_child(&canvas).ok()?;
-                    Some(())
-                })
-                .expect("Couldn't append canvas to document body.");
+            self.event_loop
+                .lock()
+                .unwrap()
+                .send_event(Events::NewState(new_state))
+                .expect("Failed to send new state event");
         }
 
-        if self.state.is_none() {
-            println!("State is none");
-            return;
+        #[cfg(target_arch = "wasm32")]
+        {
+            let window = self.window.as_ref().unwrap().clone();
+            let event_loop = self.event_loop.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let new_state = Arc::new(Mutex::new(State::new(window).await));
+                event_loop
+                    .lock()
+                    .unwrap()
+                    .send_event(Events::NewState(new_state))
+                    .expect("Failed to send new state event");
+            });
         }
     }
 
@@ -125,7 +140,7 @@ impl ApplicationHandler<Events> for CanvasApp {
                 self.mouse_position = (position.x as f32, position.y as f32);
             }
             WindowEvent::RedrawRequested => {
-                let window = self.window.as_ref().unwrap();
+                // let window = self.window.as_ref().unwrap();
                 let rendptr = self.renderer();
                 let mut renderer = rendptr.lock().unwrap();
 
