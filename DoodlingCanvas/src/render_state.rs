@@ -31,6 +31,7 @@ impl Vertex {
         }
     }
 }
+
 pub struct State {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,

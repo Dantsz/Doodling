@@ -3,7 +3,10 @@ mod brush;
 mod render_state;
 pub mod utils;
 pub mod winit_app;
-use std::sync::{Arc, Mutex};
+use std::{
+    pin,
+    sync::{Arc, Mutex},
+};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::{codecs::png::PngEncoder, EncodableLayout};
@@ -11,13 +14,13 @@ use log::info;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use winit::event_loop::{EventLoop, EventLoopProxy};
-use winit_app::{CanvasApp, Events};
+use winit_app::{CanvasApp, Events, GetFramebufferAction};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct WindowHandler {
     event_loop: Arc<Mutex<Option<EventLoop<Events>>>>,
     event_loop_proxy: Arc<Mutex<EventLoopProxy<Events>>>,
-    app: CanvasApp,
+    get_framebuffer: GetFramebufferAction,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -27,7 +30,7 @@ impl WindowHandler {
         Self {
             event_loop: other.event_loop.clone(),
             event_loop_proxy: other.event_loop_proxy.clone(),
-            app: other.app.clone(),
+            get_framebuffer: other.get_framebuffer.clone(),
         }
     }
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -36,20 +39,22 @@ impl WindowHandler {
         info!("Setup window loop");
         let event_loop = self.event_loop.lock().unwrap().take().unwrap();
         info!("Running loop");
-        let _ = event_loop.spawn_app(self.app);
+        let app = CanvasApp::new(self.event_loop_proxy, self.get_framebuffer.clone());
+        let _ = event_loop.spawn_app(app);
     }
+
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-    pub fn get_canvas_capture(&self) -> String {
-        if self.app.state.is_none() {
-            return String::from("");
+    pub async fn get_canvas_capture(&self) -> String {
+        let frame = self.get_framebuffer.lock().unwrap();
+        if let Some(get_frame) = &*frame {
+            let img = get_frame().await;
+            let mut buffer = Vec::new();
+            let encoder = PngEncoder::new(&mut buffer);
+            img.write_with_encoder(encoder).unwrap();
+            let frame = STANDARD.encode(buffer.as_bytes());
+            return frame;
         }
-        let rendptr = self.app.renderer();
-        let img = pollster::block_on(rendptr.lock().unwrap().extract_framebuffer());
-        let mut buffer = Vec::new();
-        let encoder = PngEncoder::new(&mut buffer);
-        img.write_with_encoder(encoder).unwrap();
-        let frame = STANDARD.encode(buffer.as_bytes());
-        frame
+        "".to_owned()
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -83,7 +88,7 @@ pub fn create_window() -> WindowHandler {
     WindowHandler {
         event_loop: Arc::new(Mutex::new(Some(event_loop))),
         event_loop_proxy: event_loop_proxy.clone(),
-        app: CanvasApp::new(event_loop_proxy.clone()),
+        get_framebuffer: Arc::new(Mutex::new(None)),
     }
 }
 

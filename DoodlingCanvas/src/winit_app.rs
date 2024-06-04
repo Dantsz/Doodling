@@ -1,14 +1,15 @@
 use crate::{brush::Rectangle, render_state::State};
 use log::info;
-use std::sync::{Arc, Mutex};
-use web_sys::HtmlCanvasElement;
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+};
 use winit::{
     application::ApplicationHandler,
-    dpi::PhysicalSize,
     event::{ElementState, KeyEvent, MouseButton, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoopProxy},
     keyboard::{Key, NamedKey},
-    platform::web::{WindowAttributesExtWebSys, WindowExtWebSys},
     window::Window,
 };
 #[derive(Debug)]
@@ -16,36 +17,33 @@ pub enum Events {
     NewState(Arc<Mutex<State>>),
     Close,
 }
-
-use crate::utils;
-
-use utils::{WINDOW_HEIGHT, WINDOW_WIDTH};
-
+//maybe should just return
+pub type GetFramebufferAction =
+    Arc<Mutex<Option<Box<dyn Fn() -> Pin<Box<dyn Future<Output = image::RgbaImage>>>>>>>; //Look at this! This comment was made before adding Pin :(
 #[derive(Clone)]
 pub struct CanvasApp {
-    // request_redraw: bool,
-    // wait_cancelled: bool,
-    // close_requested: bool,
     mouse_pressed: bool,
     mouse_position: (f32, f32),
     window: Option<Arc<Window>>,
     pub state: Option<Arc<Mutex<State>>>,
     event_loop: Arc<Mutex<EventLoopProxy<Events>>>,
+    get_framebuffer: GetFramebufferAction,
 }
 impl CanvasApp {
     pub fn renderer(&self) -> Arc<Mutex<State>> {
         self.state.as_ref().unwrap().clone()
     }
-    pub fn new(event_loop: Arc<Mutex<EventLoopProxy<Events>>>) -> Self {
+    pub fn new(
+        event_loop: Arc<Mutex<EventLoopProxy<Events>>>,
+        get_framebuffer: GetFramebufferAction,
+    ) -> Self {
         Self {
-            // request_redraw: false,
-            // wait_cancelled: false,
-            // close_requested: false,
             mouse_pressed: false,
             mouse_position: (0.0, 0.0),
             window: None,
             state: None,
             event_loop,
+            get_framebuffer,
         }
     }
 }
@@ -57,6 +55,7 @@ impl ApplicationHandler<Events> for CanvasApp {
         {
             info!("Initializing canvas");
             use wasm_bindgen::JsCast;
+            use web_sys::HtmlCanvasElement;
             use winit::platform::web::WindowAttributesExtWebSys;
             let window = web_sys::window().unwrap();
             let document = window.document().unwrap();
@@ -81,6 +80,7 @@ impl ApplicationHandler<Events> for CanvasApp {
 
         #[cfg(target_arch = "wasm32")]
         {
+            use winit::platform::web::WindowExtWebSys;
             let canvas = window.canvas().expect("Failed to get canvas");
             log::info!("Window canvas size: ({})", canvas.outer_html());
         }
@@ -94,6 +94,7 @@ impl ApplicationHandler<Events> for CanvasApp {
             let new_state = Arc::new(Mutex::new(pollster::block_on(State::new(
                 self.window.as_ref().unwrap().clone(),
             ))));
+            log::warn!("GetFramebuffer not implemented for non-wasm32");
             self.event_loop
                 .lock()
                 .unwrap()
@@ -105,8 +106,20 @@ impl ApplicationHandler<Events> for CanvasApp {
         {
             let window = self.window.as_ref().unwrap().clone();
             let event_loop = self.event_loop.clone();
+            let get_framebuffer = self.get_framebuffer.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let new_state = Arc::new(Mutex::new(State::new(window).await));
+                let fb_state = new_state.clone();
+                log::info!("Setting canvas capture");
+                get_framebuffer.lock().unwrap().replace(Box::new(move || {
+                    let fb_state = fb_state.clone();
+                    Box::pin(async move {
+                        let fb_state = fb_state.clone();
+                        let fb_state = fb_state.lock().unwrap();
+                        fb_state.extract_framebuffer().await
+                    })
+                }));
+
                 event_loop
                     .lock()
                     .unwrap()
@@ -123,7 +136,7 @@ impl ApplicationHandler<Events> for CanvasApp {
         event: winit::event::WindowEvent,
     ) {
         if self.state.is_none() {
-            println!("State is none");
+            log::warn!("Cannot process window events: state is none");
             return;
         }
         let mut rect = {
@@ -200,6 +213,7 @@ impl ApplicationHandler<Events> for CanvasApp {
     }
 
     fn user_event(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop, event: Events) {
+        info!("User event: {:?}", event);
         match event {
             Events::Close => {}
             Events::NewState(state) => {
