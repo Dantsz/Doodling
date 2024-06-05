@@ -12,13 +12,19 @@
         console.log("Initialized")
         let render = create_window();
         console.log("Created window")
-        window.canvas_window = WindowHandler.new(render);
+        const canvas_window = WindowHandler.new(render);
+        window.get_canvas_capture = async function get_canvas_capture() {
+            const img = await canvas_window.get_canvas_capture();
+            document.getElementById('canvas_form_data_input').value = img;
+            return img;
+        }
         await render.run_window_loop();
     </script>
 
     <input type="button" onclick="location.href='/index.html';" value="Back" class="doodle-btn" />
+    <input type="button" onclick="window.get_canvas_capture()" value="Debug" class="doodle-btn" />
 
-    <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc' onsubmit="document.getElementById('canvas_form_data_input').value = window.canvas_window.get_canvas_capture();">
+    <form hx-post="/api/create-doodle" hx-target="this" hx-swap="none" hx-ext='json-enc' onsubmit="window.get_canvas_capture()">
         <div class="grid grid-cols-3">
             <input type="text" name="name" placeholder="Doodle name" class="bg-gray-200" required>
             <input type="text" name="description" placeholder="Doodle description" class="bg-gray-200" required>
@@ -28,8 +34,7 @@
     </form>
 
     <div id="wasm-example" class="w-full flex justify-center items-center">
-    <canvas id="canvas" width="800" height="600"></canvas>
+        <canvas id="canvas" width="800" height="600"></canvas>
     </div>
-
 
 </div>
