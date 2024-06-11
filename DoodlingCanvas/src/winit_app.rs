@@ -52,7 +52,7 @@ impl CanvasApp {
 }
 impl ApplicationHandler<Events> for CanvasApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let window_attributes = Window::default_attributes()
+        let mut window_attributes = Window::default_attributes()
             .with_max_inner_size(LogicalSize::new(utils::WINDOW_WIDTH, utils::WINDOW_HEIGHT));
 
         #[cfg(target_arch = "wasm32")]

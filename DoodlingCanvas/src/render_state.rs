@@ -130,8 +130,10 @@ impl State {
         };
         surface.configure(&device, &config);
 
-        let render_shader = device.create_shader_module(wgpu::include_wgsl!("render_shader.wgsl"));
-        let canvas_shader = device.create_shader_module(wgpu::include_wgsl!("canvas_shader.wgsl"));
+        let render_shader =
+            device.create_shader_module(wgpu::include_wgsl!("shaders/render_shader.wgsl"));
+        let canvas_shader =
+            device.create_shader_module(wgpu::include_wgsl!("shaders/canvas_shader.wgsl"));
         //The canvas texture
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
