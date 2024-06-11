@@ -3,10 +3,7 @@ mod brush;
 mod render_state;
 pub mod utils;
 pub mod winit_app;
-use std::{
-    pin,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::{codecs::png::PngEncoder, EncodableLayout};
@@ -33,6 +30,8 @@ impl WindowHandler {
             get_framebuffer: other.get_framebuffer.clone(),
         }
     }
+
+    #[cfg(target_arch = "wasm32")]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     pub fn run_window_loop(self) {
         use winit::platform::web::EventLoopExtWebSys;
@@ -41,6 +40,15 @@ impl WindowHandler {
         info!("Running loop");
         let app = CanvasApp::new(self.event_loop_proxy, self.get_framebuffer.clone());
         let _ = event_loop.spawn_app(app);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn run_window_loop(self) {
+        info!("Setup window loop");
+        let event_loop = self.event_loop.lock().unwrap().take().unwrap();
+        info!("Running loop");
+        let mut app = CanvasApp::new(self.event_loop_proxy, self.get_framebuffer.clone());
+        let _ = event_loop.run_app(&mut app);
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]

@@ -1,4 +1,4 @@
-use crate::{brush::Rectangle, render_state::State};
+use crate::{brush::Rectangle, render_state::State, utils};
 use log::info;
 use std::{
     future::Future,
@@ -7,6 +7,7 @@ use std::{
 };
 use winit::{
     application::ApplicationHandler,
+    dpi::LogicalSize,
     event::{ElementState, KeyEvent, MouseButton, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoopProxy},
     keyboard::{Key, NamedKey},
@@ -20,7 +21,8 @@ pub enum Events {
 //maybe should just return
 pub type GetFramebufferAction =
     Arc<Mutex<Option<Box<dyn Fn() -> Pin<Box<dyn Future<Output = image::RgbaImage>>>>>>>; //Look at this! This comment was made before adding Pin :(
-#[derive(Clone)]
+
+#[allow(dead_code)]
 pub struct CanvasApp {
     mouse_pressed: bool,
     mouse_position: (f32, f32),
@@ -29,6 +31,7 @@ pub struct CanvasApp {
     event_loop: Arc<Mutex<EventLoopProxy<Events>>>,
     get_framebuffer: GetFramebufferAction,
 }
+
 impl CanvasApp {
     pub fn renderer(&self) -> Arc<Mutex<State>> {
         self.state.as_ref().unwrap().clone()
@@ -49,7 +52,8 @@ impl CanvasApp {
 }
 impl ApplicationHandler<Events> for CanvasApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let mut window_attributes = Window::default_attributes();
+        let window_attributes = Window::default_attributes()
+            .with_max_inner_size(LogicalSize::new(utils::WINDOW_WIDTH, utils::WINDOW_HEIGHT));
 
         #[cfg(target_arch = "wasm32")]
         {
@@ -131,7 +135,7 @@ impl ApplicationHandler<Events> for CanvasApp {
 
     fn window_event(
         &mut self,
-        _event_loop: &winit::event_loop::ActiveEventLoop,
+        event_loop: &winit::event_loop::ActiveEventLoop,
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
@@ -154,7 +158,11 @@ impl ApplicationHandler<Events> for CanvasApp {
                         ..
                     },
                 ..
-            } => {} //TODO: exit
+            } => {
+                #[cfg(not(target_arch = "wasm32"))]
+                event_loop.exit();
+            }
+
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
                 ..
@@ -197,8 +205,18 @@ impl ApplicationHandler<Events> for CanvasApp {
                     Err(e) => eprintln!("{:?}", e),
                 }
             }
-            WindowEvent::Resized(size) => {
-                println!("Resized to {:?}", size);
+            WindowEvent::Resized(new_size) => {
+                println!("Resized to {:?}", new_size);
+                if let Some(state) = self.state.as_ref() {
+                    if new_size.width > 0 && new_size.height > 0 {
+                        let mut state_lock = state.lock().unwrap();
+                        state_lock.config.width = new_size.width;
+                        state_lock.config.height = new_size.height;
+                        state_lock
+                            .surface
+                            .configure(&state_lock.device, &state_lock.config);
+                    }
+                }
             }
             _ => {}
         }

@@ -33,10 +33,10 @@ impl Vertex {
 }
 
 pub struct State {
-    surface: wgpu::Surface<'static>,
-    device: wgpu::Device,
+    pub surface: wgpu::Surface<'static>,
+    pub device: wgpu::Device,
     queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
+    pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub window: Arc<Window>,
     display_render_pipeline: wgpu::RenderPipeline,
